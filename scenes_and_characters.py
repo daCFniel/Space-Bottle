@@ -14,7 +14,7 @@ ORANGE = (255, 117, 26)
 BLUE = (54, 191, 191)
 PURPLE = (24,32,43)
 
-#Nowy typ aliena
+# Nowy typ aliena
 
 # Global variables
 frame = pygame.display.set_mode((WIDTH, HEIGHT))
