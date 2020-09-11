@@ -82,9 +82,9 @@ class Character(pygame.sprite.Sprite):
     def __init__(self, image, x, y, speed):
         super().__init__()
         self.image = image
-        self.rect = self.image.get_rect(topleft=(x, y))
+        self.rect = self.image[0].get_rect(topleft=(x, y))
         self.speed = speed
-        self.mask = pygame.mask.from_surface(self.image)
+        self.mask = pygame.mask.from_surface(self.image[0])
         self.radius = 15 * self.rect.width / 32
 
 
@@ -99,7 +99,7 @@ class Player(Character):
         self.is_immune = False
         self.num_of_bullets = 3
         self.images = []
-        self.images.append(self.image)
+        self.images.append(self.image[0])
         self.images.append(functions.get_image('img/spaceship_l2.png').convert_alpha())
         self.images.append(functions.get_image('img/spaceship_r2.png').convert_alpha())
         self.images.append(functions.get_image('img/shielded_spaceship.png').convert_alpha())
@@ -195,7 +195,14 @@ class Alien(Character):
 
     # methods
     def draw(self):
-        frame.blit(self.image, self.rect)
+        frame.blit(self.image[0], self.rect)
+        if self.level == 4:
+            if self.health == 2:
+                frame.blit(self.image[2], self.rect)
+            elif self.health == 1:
+                frame.blit(self.image[1], self.rect)
+            else:
+                frame.blit(self.image[0], self.rect)
 
     def update(self):
         self.rect.move_ip(0, self.speed)
@@ -207,7 +214,7 @@ class Alien(Character):
         if self.level == 3:
             if random.randint(0, 200) == 0:
                 GameScene.enemy_bullets.add(
-                    BulletEnemy(functions.get_image('img/bullet3.png').convert_alpha(), self.rect.x, self.rect.y, 4))
+                    BulletEnemy([functions.get_image('img/bullet3.png').convert_alpha()], self.rect.x, self.rect.y, 4))
 
     def check_boundaries(self):
         if self.rect.left <= 0:  # check if character hits the boundaries
@@ -228,7 +235,7 @@ class Bullet(Character):
 
     # methods
     def draw(self):
-        frame.blit(self.image, (self.rect.x + 16, self.rect.y + 10))
+        frame.blit(self.image[0], (self.rect.x + 16, self.rect.y + 10))
 
     def update(self):
         self.rect.move_ip(0, -self.speed)
@@ -261,7 +268,7 @@ class Laser(Character):
     # methods
     def draw(self):
         self.state = "moving"
-        frame.blit(self.image, (self.rect.x, self.rect.y))
+        frame.blit(self.image[0], (self.rect.x, self.rect.y))
 
     def update(self):
         # get the coordinates of the player's ship and fix
@@ -278,7 +285,7 @@ class Collectable(Character):
 
     # methods
     def draw(self):
-        frame.blit(self.image, self.rect)
+        frame.blit(self.image[0], self.rect)
 
     def update(self):
         self.rect.move_ip(0, Alien.shared_speed)  # collectables have same speed as aliens
@@ -321,7 +328,7 @@ class GameScene(Scene):
     # OBJECTS
     # player object
     player_sprite = pygame.sprite.Group()
-    player = Player(functions.get_image('img/spaceship.png').convert_alpha(), 370, 480, 3)
+    player = Player([functions.get_image('img/spaceship.png').convert_alpha()], 370, 480, 3)
     player_sprite.add(player)
 
     # alien objects groups
@@ -334,7 +341,7 @@ class GameScene(Scene):
     bullets_label_y = 10
 
     # laser object
-    laser = Laser(functions.get_image('img/laser_beam.png').convert_alpha(), 370, 480, 0)
+    laser = Laser([functions.get_image('img/laser_beam.png').convert_alpha()], 370, 480, 0)
 
     # collectable objects
     collectables = pygame.sprite.Group()
@@ -383,7 +390,7 @@ class GameScene(Scene):
                                 GameScene.player.num_of_bullets -= 1
                                 bullet_sound.play()  # shooting sound effect
                                 GameScene.bullets.add(
-                                    Bullet(functions.get_image('img/bullet.png').convert_alpha(),
+                                    Bullet([functions.get_image('img/bullet.png').convert_alpha()],
                                            GameScene.player.rect.x,
                                            GameScene.player.rect.y, 5))
                         elif event.key == controls[5]:
@@ -404,15 +411,18 @@ class GameScene(Scene):
                             GameScene.cheats_on = False
                     elif event.type == GameScene.ALIEN_LVL1_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
-                            Alien(functions.get_image('img/alien.png').convert_alpha(), random.randint(0, 736),
+                            Alien([functions.get_image('img/alien.png').convert_alpha()], random.randint(0, 736),
                                   random.randint(-500, -200), 2, 1, 1))
                     elif event.type == GameScene.ALIEN_LVL3_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
-                            Alien(functions.get_image('img/alien4.png').convert_alpha(), random.randint(0, 736),
+                            Alien([functions.get_image('img/alien4.png').convert_alpha()], random.randint(0, 736),
                                   random.randint(-1000, -200), 2, 3, 2))
                     elif event.type == GameScene.ALIEN_LVL4_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
-                            Alien(functions.get_image('img/alien6.png').convert_alpha(), random.randint(0, 544),
+                            Alien([functions.get_image('img/big_alien.png').convert_alpha(),
+                                   functions.get_image('img/big_alien_1hp.png').convert_alpha(),
+                                   functions.get_image('img/big_alien_2hp.png').convert_alpha()],
+                                  random.randint(0, 544),
                                   random.randint(-1000, -500), 2, 4, 3))
                     elif event.type == GameScene.ALIEN_LVL1_STOP:  # stop level  alien
                         pygame.time.set_timer(GameScene.ALIEN_LVL2_RESPAWN, 5000)
@@ -427,26 +437,26 @@ class GameScene(Scene):
                     elif event.type == GameScene.ALIEN_LVL2_RESPAWN:  # spawn level 2 alien
                         for i in range(random.randint(5, 8)):  # range(number of level 2 aliens in a row)
                             GameScene.aliens.add(
-                                Alien(functions.get_image('img/alien3.png').convert_alpha(), random.randint(0, 736),
+                                Alien([functions.get_image('img/alien3.png').convert_alpha()], random.randint(0, 736),
                                       -250, 2, 2, 1))
                     elif event.type == GameScene.COLLECTABLE_AMMO_RESPAWN:
                         GameScene.collectables.add(
-                            Collectable(functions.get_image('img/bullet2.png').convert_alpha(),
+                            Collectable([functions.get_image('img/bullet2.png').convert_alpha()],
                                         random.randint(0, 736),
                                         -100, 3, "ammo"))
                     elif event.type == GameScene.COLLECTABLE_SHIELD_RESPAWN:
                         GameScene.collectables.add(
-                            Collectable(functions.get_image('img/shield.png').convert_alpha(),
+                            Collectable([functions.get_image('img/shield.png').convert_alpha()],
                                         random.randint(0, 736),
                                         -100, 3, "shield"))
                     elif event.type == GameScene.COLLECTABLE_LASER_RESPAWN:
                         GameScene.collectables.add(
-                            Collectable(functions.get_image('img/laser_gun.png').convert_alpha(),
+                            Collectable([functions.get_image('img/laser_gun.png').convert_alpha()],
                                         random.randint(0, 736),
                                         -100, 3, "laser"))
                     elif event.type == GameScene.COLLECTABLE_IMMUNITY_RESPAWN:
                         GameScene.collectables.add(
-                            Collectable(functions.get_image('img/immune.png').convert_alpha(),
+                            Collectable([functions.get_image('img/immune.png').convert_alpha()],
                                         random.randint(0, 736),
                                         -100, 3, "immunity"))
 
@@ -1368,7 +1378,7 @@ def game_restart():
     global current_score
     current_score = 0
     Alien.shared_speed = alien_default_speed
-    GameScene.player = Player(functions.get_image('img/spaceship.png').convert_alpha(), 370, 480, 3)
+    GameScene.player = Player([functions.get_image('img/spaceship.png').convert_alpha()], 370, 480, 3)
     GameScene.player_sprite.add(GameScene.player)
     GameScene.start_time = functions.get_current_time()
     GameScene.pause = True
@@ -1421,7 +1431,8 @@ def fix_alien_overlapping(alien):
         elif alien.level == 3:
             alien.rect.y -= 10
         elif alien.level == 4:
-            alien.rect.y -= 100
+            alien.rect.y -= 20
+            alien.rect.x = random.randint(0, 544)
 
 
 def check_if_alien_collide():
@@ -1429,7 +1440,6 @@ def check_if_alien_collide():
                                                         GameScene.bullets, False, True,
                                                         pygame.sprite.collide_circle)
     for alien in alien_bullet_collision:
-        print(alien)
         explosion_sound.play()
         alien.health -= 1  # reduce alien's health by 1 if it collides with bullet
 
