@@ -134,4 +134,4 @@ exit()
 # new controls for arrows control settings  (+new controls image)
 # dwa nowe typy aliena
 # ruszające się tło
-# animacje turbo
+# turbo animations
