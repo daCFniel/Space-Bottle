@@ -83,7 +83,6 @@ exit()
 # przyśpieszenie statku
 # mozliwosc przyciszenia dzwieku
 
-# sterowanie strzalkami
 # suwak
 # inne typy alienów
 # liczenie czasu podczas gry
@@ -124,6 +123,7 @@ exit()
 # nowy typ aliena
 # endless mode difficulty
 # new collectable - immunity
+# sterowanie strzalkami
 # controls settings - arrows/wsad
 # topscore + saving
 # ranks/exp + saving
