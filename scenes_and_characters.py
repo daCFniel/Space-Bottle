@@ -12,7 +12,7 @@ RED = (255, 0, 0)
 GREY = (70, 70, 70)
 ORANGE = (255, 117, 26)
 BLUE = (54, 191, 191)
-PURPLE = (24,32,43)
+PURPLE = (24, 32, 43)
 
 # Global variables
 frame = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -23,7 +23,6 @@ immunity_time = 10
 pause_time = 3
 
 # audio
-functions.load_music('audio/soundtrack.mp3')
 bullet_sound = functions.get_sound('audio/laser.wav')
 explosion_sound = functions.get_sound('audio/explosion.wav')
 shield_broke_sound = functions.get_sound('audio/shield_broke.wav')
@@ -167,7 +166,7 @@ class Player(Character):
             if shift_pressed:
                 self.rect.move_ip(0, self.speed)
                 if not key[controls[0]]:
-                    frame.blit(self.images[10], (self.rect.left, self.rect.bottom-20))
+                    frame.blit(self.images[10], (self.rect.left, self.rect.bottom - 20))
             else:
                 self.rect.move_ip(0, self.speed - 1)
         if key[controls[1]]:  # left
@@ -357,6 +356,7 @@ class GameScene(Scene):
     start_time_immunity = None  # start time used for immunity bonus
     cheats_on = False  # ammo bonus easter egg code code cheat
 
+
     def __init__(self):
         super().__init__()
         self.background = functions.get_image('img/background2.png').convert()
@@ -455,7 +455,6 @@ class GameScene(Scene):
             if not GameScene.pause:
                 player.update(keys)
             player.draw(keys)
-
 
         # alien movement
         for alien in GameScene.aliens:
@@ -590,6 +589,9 @@ class GameOptionsScene(Scene):
             self.switch_to_scene(GameScene())
 
         def button4_action():
+            pygame.time.wait(150)
+            functions.load_music('audio/menu_music.mp3')
+            pygame.mixer.music.play(-1)
             self.switch_to_scene(MenuScene())
 
         self.button1.on_click_action(lambda: button1_action())
@@ -663,7 +665,8 @@ class MenuCreditsScene(Scene):
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.switch_to_scene(MenuScene())
-                pygame.mixer.fadeout(4000)
+                pygame.mixer.fadeout(100)
+                pygame.mixer.music.play(-1)
 
     def update(self, pressed_keys):
         for text, rect in self.text_objects:
@@ -760,6 +763,10 @@ class GameOptionsAudioScene(GameOptionsScene):
 
 
 class MenuScene(Scene):
+    # menu music
+    functions.load_music('audio/menu_music.mp3')
+    pygame.mixer.music.play(-1)
+
     def __init__(self):
         super().__init__()
         # logo
@@ -807,6 +814,7 @@ class MenuScene(Scene):
             self.switch_to_scene(MenuSettingsScene())
 
         def button3_action():
+            pygame.mixer.music.stop()
             self.switch_to_scene(MenuCreditsScene())
 
         def button4_action():
@@ -1001,7 +1009,8 @@ class MenuSettingsControlsScene(MenuSettingsDisplayScene):
         def button_action():
             global controls, current_controls
             if current_controls == 0:
-                controls = [pygame.K_UP, pygame.K_LEFT, pygame.K_DOWN, pygame.K_RIGHT, pygame.K_x, pygame.K_c, pygame.K_z]
+                controls = [pygame.K_UP, pygame.K_LEFT, pygame.K_DOWN, pygame.K_RIGHT, pygame.K_x, pygame.K_c,
+                            pygame.K_z]
                 current_controls = 1
             else:
                 controls = [pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d, pygame.K_SPACE,
@@ -1365,16 +1374,17 @@ def game_restart():
     GameScene.pause = True
     # reset timers
     pygame.time.set_timer(GameScene.ALIEN_LVL1_STOP, random.randint(40000, 60000))
-    #pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(200, 250))
+    # pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(200, 250))
     pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(20000, 25000))
-    #pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(4000, 10000))
+    # pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(4000, 10000))
     pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(400000, 1000000))
-    #pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(10000, 20000))
+    # pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(10000, 20000))
     pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(1000000, 2000000))
     pygame.time.set_timer(GameScene.COLLECTABLE_AMMO_RESPAWN, random.randint(25000, 35000))
     pygame.time.set_timer(GameScene.COLLECTABLE_SHIELD_RESPAWN, random.randint(60000, 80000))
     pygame.time.set_timer(GameScene.COLLECTABLE_LASER_RESPAWN, random.randint(90000, 110000))
     pygame.time.set_timer(GameScene.COLLECTABLE_IMMUNITY_RESPAWN, random.randint(100000, 130000))
+    functions.load_music('audio/soundtrack.mp3')
     pygame.mixer.music.play(-1)
     GameScene.game_is_active = True
 
