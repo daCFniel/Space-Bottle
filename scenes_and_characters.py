@@ -34,10 +34,9 @@ promotion_sound = functions.get_sound('audio/promotion.wav')
 top_score_sound = functions.get_sound('audio/top_score.wav')
 promotion_and_score_sound = functions.get_sound('audio/promotion_and_score.wav')
 menu_sound = functions.get_sound('audio/entering_menu.wav')
-credits_music = functions.get_sound('audio/credits_music.wav')
 accept_sound = functions.get_sound('audio/accept.wav')
 sounds = [bullet_sound, explosion_sound, collectable_sound, laser_sound, cow_sound, fail_sound, promotion_sound,
-          menu_sound, credits_music, accept_sound]
+          menu_sound, accept_sound]
 
 #  open file responsible for storing the progress
 #  and load the data
@@ -360,7 +359,6 @@ class GameScene(Scene):
     start_time_immunity = None  # start time used for immunity bonus
     cheats_on = False  # ammo bonus easter egg code code cheat
 
-
     def __init__(self):
         super().__init__()
         self.background = functions.get_image('img/background2.png').convert()
@@ -662,14 +660,11 @@ class MenuCreditsScene(Scene):
         self.ending_text = gui_elements.Text("Hope you enjoyed", WHITE, self.credits_font_big)
         self.ending_text.rect.center = frame_rect.center
 
-        # credits music
-        credits_music.play()
-
     def event_handling(self, events):
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.switch_to_scene(MenuScene())
-                pygame.mixer.fadeout(100)
+                pygame.mixer.music.load('audio/menu_music.mp3')
                 pygame.mixer.music.play(-1)
 
     def update(self, pressed_keys):
@@ -818,7 +813,8 @@ class MenuScene(Scene):
             self.switch_to_scene(MenuSettingsScene())
 
         def button3_action():
-            pygame.mixer.music.stop()
+            pygame.mixer.music.load('audio/credits_music.mp3')
+            pygame.mixer.music.play(-1)
             self.switch_to_scene(MenuCreditsScene())
 
         def button4_action():
