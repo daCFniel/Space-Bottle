@@ -131,7 +131,7 @@ exit()
 # ranks images and names
 # menu and options improvments (back buttom)
 # all settings are now saved to the file
-# new controls for arrows control settings  (+new controls image)
+# new controls for arrows control settings (+new controls image)
 # dwa nowe typy aliena
 # ruszające się tło
 # turbo animations
