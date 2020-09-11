@@ -16,6 +16,7 @@ PURPLE = (24,32,43)
 
 # Nowy typ aliena
 # Nowa mapa
+# Nowa opcja poruszania sie
 
 # Global variables
 frame = pygame.display.set_mode((WIDTH, HEIGHT))
