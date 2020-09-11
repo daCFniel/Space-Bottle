@@ -189,9 +189,10 @@ class Alien(Character):
     shared_speed = alien_default_speed  # speed of all the aliens
 
     # constructor
-    def __init__(self, image, x, y, speed, level):
+    def __init__(self, image, x, y, speed, level, health):
         super().__init__(image, x, y, speed)
         self.level = level
+        self.health = health
 
     # methods
     def draw(self):
@@ -199,6 +200,9 @@ class Alien(Character):
 
     def update(self):
         self.rect.move_ip(0, self.speed)
+        # check if alien's health reaches 0, if so - kill it
+        if self.health == 0:
+            self.kill()
 
     def action(self):
         if self.level == 3:
@@ -403,15 +407,15 @@ class GameScene(Scene):
                     elif event.type == GameScene.ALIEN_LVL1_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
                             Alien(functions.get_image('img/alien.png').convert_alpha(), random.randint(0, 736),
-                                  random.randint(-500, -200), 2, 1))
+                                  random.randint(-500, -200), 2, 1, 1))
                     elif event.type == GameScene.ALIEN_LVL3_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
                             Alien(functions.get_image('img/alien4.png').convert_alpha(), random.randint(0, 736),
-                                  random.randint(-1000, -200), 2, 3))
+                                  random.randint(-1000, -200), 2, 3, 2))
                     elif event.type == GameScene.ALIEN_LVL4_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
                             Alien(functions.get_image('img/alien6.png').convert_alpha(), random.randint(0, 544),
-                                  random.randint(-1000, -500), 2, 4))
+                                  random.randint(-1000, -500), 2, 4, 3))
                     elif event.type == GameScene.ALIEN_LVL1_STOP:  # stop level  alien
                         pygame.time.set_timer(GameScene.ALIEN_LVL2_RESPAWN, 5000)
                         pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, 0)
@@ -426,7 +430,7 @@ class GameScene(Scene):
                         for i in range(random.randint(5, 8)):  # range(number of level 2 aliens in a row)
                             GameScene.aliens.add(
                                 Alien(functions.get_image('img/alien3.png').convert_alpha(), random.randint(0, 736),
-                                      -250, 2, 2))
+                                      -250, 2, 2, 1))
                     elif event.type == GameScene.COLLECTABLE_AMMO_RESPAWN:
                         GameScene.collectables.add(
                             Collectable(functions.get_image('img/bullet2.png').convert_alpha(),
@@ -1374,12 +1378,9 @@ def game_restart():
     GameScene.pause = True
     # reset timers
     pygame.time.set_timer(GameScene.ALIEN_LVL1_STOP, random.randint(40000, 60000))
-    # pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(200, 250))
-    pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(20000, 25000))
-    # pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(4000, 10000))
-    pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(400000, 1000000))
-    # pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(10000, 20000))
-    pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(1000000, 2000000))
+    pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(200, 250))
+    pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(4000, 10000))
+    pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(10000, 20000))
     pygame.time.set_timer(GameScene.COLLECTABLE_AMMO_RESPAWN, random.randint(25000, 35000))
     pygame.time.set_timer(GameScene.COLLECTABLE_SHIELD_RESPAWN, random.randint(60000, 80000))
     pygame.time.set_timer(GameScene.COLLECTABLE_LASER_RESPAWN, random.randint(90000, 110000))
@@ -1424,16 +1425,17 @@ def fix_alien_overlapping(alien):
         elif alien.level == 3:
             alien.rect.y -= 10
         elif alien.level == 4:
-            alien.rect.y -= 10
-            alien.rect.x = random.randint(0, 544)
+            alien.rect.y -= 100
 
 
 def check_if_alien_collide():
-    alien_bullet_collision = pygame.sprite.groupcollide(GameScene.bullets,
-                                                        GameScene.aliens, True, True,
+    alien_bullet_collision = pygame.sprite.groupcollide(GameScene.aliens,
+                                                        GameScene.bullets, False, True,
                                                         pygame.sprite.collide_circle)
-    if alien_bullet_collision:
+    for alien in alien_bullet_collision:
+        print(alien)
         explosion_sound.play()
+        alien.health -= 1  # reduce alien's health by 1 if it collides with bullet
 
     if GameScene.laser.state == "moving":
         alien_laser_collision = pygame.sprite.spritecollide(GameScene.laser,
