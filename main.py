@@ -81,11 +81,10 @@ exit()
 # formacje alienów aka wzorki
 # rozne rodzaje strzałow
 # przyśpieszenie statku
-# mozliwosc przyciszenia dzwieku
-
 # suwak
 # liczenie czasu podczas gry
 # levele
+
 
 # Done
 # podnoszenie pociskow
