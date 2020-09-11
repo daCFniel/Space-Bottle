@@ -18,6 +18,7 @@ PURPLE = (24,32,43)
 # Nowa mapa
 # Nowa opcja poruszania sie
 # Muzyka w Menu
+# Czas publikacji wersji
 
 # Global variables
 frame = pygame.display.set_mode((WIDTH, HEIGHT))
