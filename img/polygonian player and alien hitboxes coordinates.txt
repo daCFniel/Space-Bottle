@@ -1,0 +1,10 @@
+Player:
+self.hitbox = (
+                (self.x + 26, self.y), (self.x + 36, self.y), (self.x + 44, self.y + 16), (self.x + 44, self.y + 32),
+                (self.x + 64, self.y + 46), (self.x + 64, self.y + 64), (self.x, self.y + 64),
+                (self.x, self.y + 46), (self.x + 18, self.y + 32), (self.x + 18, self.y + 16))
+
+Alien:
+self.hitbox = (
+            (self.x + 20, self.y), (self.x + 44, self.y), (self.x + 64, self.y + 28), (self.x + 50, self.y + 40),
+            (self.x + 60, self.y + 62), (self.x + 4, self.y + 62), (self.x + 10, self.y + 40), (self.x, self.y + 28))
