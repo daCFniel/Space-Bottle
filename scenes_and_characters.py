@@ -12,7 +12,7 @@ RED = (255, 0, 0)
 GREY = (70, 70, 70)
 ORANGE = (255, 117, 26)
 BLUE = (54, 191, 191)
-PURPLE = (24,32,43)  # ADDED NEW COLOR
+PURPLE = (24,32,43)  # NOWY KOMENTARZ
 
 # Global variables
 frame = pygame.display.set_mode((WIDTH, HEIGHT))
