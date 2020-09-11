@@ -14,12 +14,6 @@ ORANGE = (255, 117, 26)
 BLUE = (54, 191, 191)
 PURPLE = (24,32,43)
 
-# Nowy typ aliena
-# Nowa mapa
-# Nowa opcja poruszania sie
-# Muzyka w Menu
-# Czas publikacji wersji
-
 # Global variables
 frame = pygame.display.set_mode((WIDTH, HEIGHT))
 frame_rect = frame.get_rect()
