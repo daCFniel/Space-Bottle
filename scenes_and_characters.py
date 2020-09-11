@@ -15,6 +15,7 @@ BLUE = (54, 191, 191)
 PURPLE = (24,32,43)
 
 # Nowy typ aliena
+# Nowa mapa
 
 # Global variables
 frame = pygame.display.set_mode((WIDTH, HEIGHT))
