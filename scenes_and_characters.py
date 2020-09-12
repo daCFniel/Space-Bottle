@@ -35,8 +35,10 @@ top_score_sound = functions.get_sound('audio/top_score.wav')
 promotion_and_score_sound = functions.get_sound('audio/promotion_and_score.wav')
 menu_sound = functions.get_sound('audio/entering_menu.wav')
 accept_sound = functions.get_sound('audio/accept.wav')
-sounds = [bullet_sound, explosion_sound, collectable_sound, laser_sound, cow_sound, fail_sound, promotion_sound,
-          menu_sound, accept_sound]
+big_explosion_sound = functions.get_sound('audio/big_explosion.wav')
+sounds = [bullet_sound, explosion_sound, shield_broke_sound, collectable_sound, laser_sound, cow_sound, fail_sound,
+          promotion_sound, top_score_sound, promotion_and_score_sound,
+          menu_sound, accept_sound, big_explosion_sound]
 
 #  open file responsible for storing the progress
 #  and load the data
@@ -207,6 +209,9 @@ class Alien(Character):
         self.rect.move_ip(0, self.speed)
         # check if alien's health reaches 0, if so - kill it
         if self.health == 0:
+            if self.level == 4:
+                big_explosion_sound.play()
+                GameScene.aliens.empty()
             self.kill()
 
     def action(self):
@@ -1399,6 +1404,12 @@ def game_restart():
     pygame.mixer.music.play(-1)
     GameScene.game_is_active = True
     # place for testing static aliens
+    GameScene.aliens.add(
+        Alien([functions.get_image('img/big_alien.png').convert_alpha(),
+               functions.get_image('img/big_alien_1hp.png').convert_alpha(),
+               functions.get_image('img/big_alien_2hp.png').convert_alpha()],
+              random.randint(0, 544),
+              100, 0, 4, 3))
 
 
 def get_ready():  # count 3 seconds before resuming the game, blit the counter
