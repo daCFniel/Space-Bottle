@@ -195,14 +195,12 @@ class Alien(Character):
 
     # methods
     def draw(self):
-        frame.blit(self.image[0], self.rect)
         if self.level == 4:
             if self.health == 2:
-                frame.blit(self.image[2], self.rect)
+                self.image[0] = self.image[2]
             elif self.health == 1:
-                frame.blit(self.image[1], self.rect)
-            else:
-                frame.blit(self.image[0], self.rect)
+                self.image[0] = self.image[1]
+        frame.blit(self.image[0], self.rect)
 
     def update(self):
         self.rect.move_ip(0, self.speed)
@@ -385,6 +383,10 @@ class GameScene(Scene):
                         elif event.key == pygame.K_8:
                             # shield bonus easter egg code code cheat
                             GameScene.player.has_shield = True
+                        elif event.key == pygame.K_7:
+                            # immunity bonus easter egg code cheat
+                            GameScene.start_time_immunity = functions.get_current_time() + 50
+                            GameScene.player.is_immune = True
                         elif event.key == controls[4]:
                             if GameScene.player.num_of_bullets > 0:
                                 GameScene.player.num_of_bullets -= 1
@@ -1394,6 +1396,7 @@ def game_restart():
     functions.load_music('audio/soundtrack.mp3')
     pygame.mixer.music.play(-1)
     GameScene.game_is_active = True
+    # place for testing static aliens
 
 
 def get_ready():  # count 3 seconds before resuming the game, blit the counter
