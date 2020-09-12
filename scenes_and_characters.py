@@ -195,10 +195,11 @@ class Alien(Character):
 
     # methods
     def draw(self):
-        if self.level == 4:
-            if self.health == 2:
-                self.image[0] = self.image[2]
-            elif self.health == 1:
+        if self.level == 4 or self.level == 3:
+            if self.level == 4:
+                if self.health == 2:
+                    self.image[0] = self.image[2]
+            if self.health == 1:
                 self.image[0] = self.image[1]
         frame.blit(self.image[0], self.rect)
 
@@ -417,7 +418,8 @@ class GameScene(Scene):
                                   random.randint(-500, -200), 2, 1, 1))
                     elif event.type == GameScene.ALIEN_LVL3_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
-                            Alien([functions.get_image('img/alien4.png').convert_alpha()], random.randint(0, 736),
+                            Alien([functions.get_image('img/alien4.png').convert_alpha(),
+                                   functions.get_image('img/alien4_1hp.png').convert_alpha()], random.randint(0, 736),
                                   random.randint(-1000, -200), 2, 3, 2))
                     elif event.type == GameScene.ALIEN_LVL4_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
