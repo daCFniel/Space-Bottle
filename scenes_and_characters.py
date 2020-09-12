@@ -190,35 +190,23 @@ class Alien(Character):
     shared_speed = alien_default_speed  # speed of all the aliens
 
     # constructor
-    def __init__(self, image, x, y, speed, level, health):
+    def __init__(self, image, x, y, speed, health):
         super().__init__(image, x, y, speed)
-        self.level = level
+        self.level = 1
         self.health = health
 
     # methods
     def draw(self):
-        if self.level == 4 or self.level == 3:
-            if self.level == 4:
-                if self.health == 2:
-                    self.image[0] = self.image[2]
-            if self.health == 1:
-                self.image[0] = self.image[1]
         frame.blit(self.image[0], self.rect)
 
     def update(self):
         self.rect.move_ip(0, self.speed)
         # check if alien's health reaches 0, if so - kill it
         if self.health == 0:
-            if self.level == 4:
-                big_explosion_sound.play()
-                GameScene.aliens.empty()
             self.kill()
 
     def action(self):
-        if self.level == 3:
-            if random.randint(0, 200) == 0:
-                GameScene.enemy_bullets.add(
-                    BulletEnemy([functions.get_image('img/bullet3.png').convert_alpha()], self.rect.x, self.rect.y, 4))
+        pass
 
     def check_boundaries(self):
         if self.rect.left <= 0:  # check if character hits the boundaries
@@ -229,6 +217,55 @@ class Alien(Character):
             self.kill()
             global current_score
             current_score += 1
+
+
+class AlienLevel2(Alien):
+    def __init__(self, image, x, y, speed, health):
+        super().__init__(image, x, y, speed, health)
+        self.level = 2
+
+
+class AlienLevel3(Alien):
+    def __init__(self, image, x, y, speed, health):
+        super().__init__(image, x, y, speed, health)
+        self.level = 3
+
+    def draw(self):
+        if self.health == 1:
+            self.image[0] = self.image[1]
+        frame.blit(self.image[0], self.rect)
+
+    def update(self):
+        self.rect.move_ip(0, self.speed)
+        # check if alien's health reaches 0, if so - kill it
+        if self.health == 0:
+            self.kill()
+
+    def action(self):
+        if random.randint(0, 200) == 0:
+            GameScene.enemy_bullets.add(
+                BulletEnemy([functions.get_image('img/bullet3.png').convert_alpha()], self.rect.x, self.rect.y, 4))
+
+
+class AlienLevel4(Alien):
+    def __init__(self, image, x, y, speed, health):
+        super().__init__(image, x, y, speed, health)
+        self.level = 4
+
+    def draw(self):
+        if self.health == 2:
+            self.image[0] = self.image[2]
+        if self.health == 1:
+            self.image[0] = self.image[1]
+        frame.blit(self.image[0], self.rect)
+
+    def update(self):
+        self.rect.move_ip(0, self.speed)
+        # check if alien's health reaches 0, if so - kill it
+        if self.health == 0:  # explode and die
+            big_explosion_sound.play()
+            GameScene.aliens.empty()
+            self.kill()
 
 
 class Bullet(Character):
@@ -420,19 +457,24 @@ class GameScene(Scene):
                     elif event.type == GameScene.ALIEN_LVL1_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
                             Alien([functions.get_image('img/alien.png').convert_alpha()], random.randint(0, 736),
-                                  random.randint(-500, -200), 2, 1, 1))
+                                  random.randint(-500, -200), 2, 1))
+                    elif event.type == GameScene.ALIEN_LVL2_RESPAWN:  # spawn level 2 alien
+                        for i in range(random.randint(5, 8)):  # range(number of level 2 aliens in a row)
+                            GameScene.aliens.add(
+                                AlienLevel2([functions.get_image('img/alien3.png').convert_alpha()], random.randint(0, 736),
+                                      -250, 2, 1))
                     elif event.type == GameScene.ALIEN_LVL3_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
-                            Alien([functions.get_image('img/alien4.png').convert_alpha(),
+                            AlienLevel3([functions.get_image('img/alien4.png').convert_alpha(),
                                    functions.get_image('img/alien4_1hp.png').convert_alpha()], random.randint(0, 736),
-                                  random.randint(-1000, -200), 2, 3, 2))
+                                  random.randint(-1000, -200), 2, 2))
                     elif event.type == GameScene.ALIEN_LVL4_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
-                            Alien([functions.get_image('img/big_alien.png').convert_alpha(),
+                            AlienLevel4([functions.get_image('img/big_alien.png').convert_alpha(),
                                    functions.get_image('img/big_alien_1hp.png').convert_alpha(),
                                    functions.get_image('img/big_alien_2hp.png').convert_alpha()],
                                   random.randint(0, 544),
-                                  random.randint(-1000, -500), 2, 4, 3))
+                                  random.randint(-1000, -500), 2, 3))
                     elif event.type == GameScene.ALIEN_LVL1_STOP:  # stop level  alien
                         pygame.time.set_timer(GameScene.ALIEN_LVL2_RESPAWN, 5000)
                         pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, 0)
@@ -443,11 +485,6 @@ class GameScene(Scene):
                         pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(180, 230))
                         pygame.time.set_timer(GameScene.ALIEN_LVL1_STOP, random.randint(30000, 50000))
                         pygame.time.set_timer(GameScene.ALIEN_LVL2_STOP, 0)
-                    elif event.type == GameScene.ALIEN_LVL2_RESPAWN:  # spawn level 2 alien
-                        for i in range(random.randint(5, 8)):  # range(number of level 2 aliens in a row)
-                            GameScene.aliens.add(
-                                Alien([functions.get_image('img/alien3.png').convert_alpha()], random.randint(0, 736),
-                                      -250, 2, 2, 1))
                     elif event.type == GameScene.COLLECTABLE_AMMO_RESPAWN:
                         GameScene.collectables.add(
                             Collectable([functions.get_image('img/bullet2.png').convert_alpha()],
@@ -1404,12 +1441,6 @@ def game_restart():
     pygame.mixer.music.play(-1)
     GameScene.game_is_active = True
     # place for testing static aliens
-    GameScene.aliens.add(
-        Alien([functions.get_image('img/big_alien.png').convert_alpha(),
-               functions.get_image('img/big_alien_1hp.png').convert_alpha(),
-               functions.get_image('img/big_alien_2hp.png').convert_alpha()],
-              random.randint(0, 544),
-              100, 0, 4, 3))
 
 
 def get_ready():  # count 3 seconds before resuming the game, blit the counter
