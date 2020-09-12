@@ -236,7 +236,7 @@ class AlienLevel3(Alien):
         frame.blit(self.image[0], self.rect)
 
     def update(self):
-        self.rect.move_ip(0, self.speed)
+        self.rect.move_ip(self.speed, 1)
         # check if alien's health reaches 0, if so - kill it
         if self.health == 0:
             self.kill()
@@ -245,6 +245,14 @@ class AlienLevel3(Alien):
         if random.randint(0, 200) == 0:
             GameScene.enemy_bullets.add(
                 BulletEnemy([functions.get_image('img/bullet3.png').convert_alpha()], self.rect.x, self.rect.y, 4))
+
+    def check_boundaries(self):
+        if self.rect.left <= 0 or self.rect.right >= WIDTH:  # check if character hits the boundaries
+            self.speed *= -1
+        if self.rect.top > HEIGHT:
+            self.kill()
+            global current_score
+            current_score += 1
 
 
 class AlienLevel4(Alien):
@@ -1443,6 +1451,11 @@ def game_restart():
     pygame.mixer.music.play(-1)
     GameScene.game_is_active = True
     # place for testing static aliens
+    GameScene.aliens.add(
+        AlienLevel3([functions.get_image('img/alien4.png').convert_alpha(),
+                     functions.get_image('img/alien4_1hp.png').convert_alpha()],
+                    random.randint(0, 736),
+                    100, 2, 2))
 
 
 def get_ready():  # count 3 seconds before resuming the game, blit the counter
@@ -1477,11 +1490,6 @@ def fix_alien_overlapping(alien):
             alien.kill()
         elif alien.level == 2:
             alien.rect.x = random.randint(0, 736)
-        elif alien.level == 3:
-            alien.rect.y -= 10
-        elif alien.level == 4:
-            alien.rect.y -= 20
-            alien.rect.x = random.randint(0, 544)
 
 
 def check_if_alien_collide():
