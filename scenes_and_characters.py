@@ -461,20 +461,22 @@ class GameScene(Scene):
                     elif event.type == GameScene.ALIEN_LVL2_RESPAWN:  # spawn level 2 alien
                         for i in range(random.randint(5, 8)):  # range(number of level 2 aliens in a row)
                             GameScene.aliens.add(
-                                AlienLevel2([functions.get_image('img/alien3.png').convert_alpha()], random.randint(0, 736),
-                                      -250, 2, 1))
+                                AlienLevel2([functions.get_image('img/alien3.png').convert_alpha()],
+                                            random.randint(0, 736),
+                                            -250, 2, 1))
                     elif event.type == GameScene.ALIEN_LVL3_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
                             AlienLevel3([functions.get_image('img/alien4.png').convert_alpha(),
-                                   functions.get_image('img/alien4_1hp.png').convert_alpha()], random.randint(0, 736),
-                                  random.randint(-1000, -200), 2, 2))
+                                         functions.get_image('img/alien4_1hp.png').convert_alpha()],
+                                        random.randint(0, 736),
+                                        random.randint(-1000, -200), 2, 2))
                     elif event.type == GameScene.ALIEN_LVL4_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
                             AlienLevel4([functions.get_image('img/big_alien.png').convert_alpha(),
-                                   functions.get_image('img/big_alien_1hp.png').convert_alpha(),
-                                   functions.get_image('img/big_alien_2hp.png').convert_alpha()],
-                                  random.randint(0, 544),
-                                  random.randint(-1000, -500), 2, 3))
+                                         functions.get_image('img/big_alien_1hp.png').convert_alpha(),
+                                         functions.get_image('img/big_alien_2hp.png').convert_alpha()],
+                                        random.randint(0, 544),
+                                        random.randint(-1000, -500), 2, 3))
                     elif event.type == GameScene.ALIEN_LVL1_STOP:  # stop level  alien
                         pygame.time.set_timer(GameScene.ALIEN_LVL2_RESPAWN, 5000)
                         pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, 0)
@@ -1492,10 +1494,11 @@ def check_if_alien_collide():
 
     if GameScene.laser.state == "moving":
         alien_laser_collision = pygame.sprite.spritecollide(GameScene.laser,
-                                                            GameScene.aliens, True,
+                                                            GameScene.aliens, False,
                                                             pygame.sprite.collide_mask)
-        if alien_laser_collision:
+        for alien in alien_laser_collision:
             explosion_sound.play()
+            alien.health -= 1
 
     alien_player_collision = pygame.sprite.spritecollide(GameScene.player,
                                                          GameScene.aliens, True,
