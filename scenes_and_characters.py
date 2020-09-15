@@ -209,10 +209,6 @@ class Alien(Character):
         pass
 
     def check_boundaries(self):
-        if self.rect.left <= 0:  # check if character hits the boundaries
-            self.rect.left = random.randint(0, WIDTH - self.rect.width)
-        elif self.rect.right >= WIDTH:
-            self.rect.right = random.randint(0 + self.rect.width, WIDTH)
         if self.rect.top > HEIGHT:
             self.kill()
             global current_score
@@ -467,11 +463,15 @@ class GameScene(Scene):
                             Alien([functions.get_image('img/alien.png').convert_alpha()], random.randint(0, 736),
                                   random.randint(-500, -200), 2, 1))
                     elif event.type == GameScene.ALIEN_LVL2_RESPAWN:  # spawn level 2 alien
-                        for i in range(random.randint(5, 8)):  # range(number of level 2 aliens in a row)
+                        # generate random number which indicates where the hole in alien level 2 wall will be
+                        random_number = random.randint(0, 11)
+                        extra = 0
+                        for i in range(11):  # range(number of level 2 aliens in a row)
+                            if random_number == i:
+                                extra = 95  # width of the hole in the alien level 2 wall
                             GameScene.aliens.add(
                                 AlienLevel2([functions.get_image('img/alien3.png').convert_alpha()],
-                                            random.randint(0, 736),
-                                            -250, 2, 1))
+                                            64 * i + extra, -100, 2, 1))
                     elif event.type == GameScene.ALIEN_LVL3_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
                             AlienLevel3([functions.get_image('img/alien4.png').convert_alpha(),
@@ -711,7 +711,7 @@ class MenuCreditsScene(Scene):
         # text that will be shown in credits
         self.credits_list = ["Space Bottle", " ", " ", " ", "Programming -- daCFniel", "Graphics -- daCFniel",
                              "Design -- daCFniel", " ", " ", " ",
-                             "Audio -- Namrox", "Testing -- Namrox"]
+                             "Menu song -- Namrox", "Testing -- Namrox", "Ideas -- Namrox"]
         # fonts
         self.credits_font = functions.get_font('fonts/Space_Galaxy.ttf', 40)
         self.credits_font_big = functions.get_font('fonts/Space_Galaxy.ttf', 90)
@@ -1451,11 +1451,6 @@ def game_restart():
     pygame.mixer.music.play(-1)
     GameScene.game_is_active = True
     # place for testing static aliens
-    GameScene.aliens.add(
-        AlienLevel3([functions.get_image('img/alien4.png').convert_alpha(),
-                     functions.get_image('img/alien4_1hp.png').convert_alpha()],
-                    random.randint(0, 736),
-                    100, 2, 2))
 
 
 def get_ready():  # count 3 seconds before resuming the game, blit the counter
@@ -1488,8 +1483,6 @@ def fix_alien_overlapping(alien):
                 GameScene.collectables):
         if alien.level == 1:
             alien.kill()
-        elif alien.level == 2:
-            alien.rect.x = random.randint(0, 736)
 
 
 def check_if_alien_collide():
