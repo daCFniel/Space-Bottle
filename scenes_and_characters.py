@@ -18,9 +18,10 @@ PURPLE = (24, 32, 43)
 frame = pygame.display.set_mode((WIDTH, HEIGHT))
 frame_rect = frame.get_rect()
 current_score = 0
-alien_default_speed = 2
+alien_default_speed = 3
 immunity_time = 10
 pause_time = 3
+angry_mode_time = 10
 
 # audio
 bullet_sound = functions.get_sound('audio/laser.wav')
@@ -188,6 +189,7 @@ class Player(Character):
 
 class Alien(Character):
     shared_speed = alien_default_speed  # speed of all the aliens
+    angry_mode = False  # if this is true all aliens move faster
 
     # constructor
     def __init__(self, image, x, y, speed, health):
@@ -200,7 +202,10 @@ class Alien(Character):
         frame.blit(self.image[0], self.rect)
 
     def update(self):
-        self.rect.move_ip(0, self.speed)
+        if Alien.angry_mode:
+            self.rect.move_ip(0, Alien.shared_speed)  # move faster
+        else:
+            self.rect.move_ip(0, self.speed)
         # check if alien's health reaches 0, if so - kill it
         if self.health == 0:
             self.kill()
@@ -232,7 +237,10 @@ class AlienLevel3(Alien):
         frame.blit(self.image[0], self.rect)
 
     def update(self):
-        self.rect.move_ip(self.speed, 1)
+        if Alien.angry_mode:
+            self.rect.move_ip(Alien.shared_speed, 1)  # move faster
+        else:
+            self.rect.move_ip(self.speed, 1)
         # check if alien's health reaches 0, if so - kill it
         if self.health == 0:
             self.kill()
@@ -264,7 +272,10 @@ class AlienLevel4(Alien):
         frame.blit(self.image[0], self.rect)
 
     def update(self):
-        self.rect.move_ip(0, self.speed)
+        if Alien.angry_mode:
+            self.rect.move_ip(0, Alien.shared_speed)  # move faster
+        else:
+            self.rect.move_ip(0, self.speed)
         # check if alien's health reaches 0, if so - kill it
         if self.health == 0:  # explode and die
             big_explosion_sound.play()
@@ -333,7 +344,7 @@ class Collectable(Character):
         frame.blit(self.image[0], self.rect)
 
     def update(self):
-        self.rect.move_ip(0, Alien.shared_speed)  # collectables have same speed as aliens
+        self.rect.move_ip(0, self.speed)  # collectables have same speed as aliens
 
     def check_boundaries(self):
         if self.rect.top > HEIGHT:
@@ -394,6 +405,7 @@ class GameScene(Scene):
     # events
     ALIEN_LVL1_RESPAWN = pygame.USEREVENT
     COLLECTABLE_IMMUNITY_RESPAWN = pygame.USEREVENT - 1
+    COLLECTABLE_ANGRY_RESPAWN = pygame.USEREVENT - 3
     COLLECTABLE_LASER_RESPAWN = pygame.USEREVENT + 1
     COLLECTABLE_SHIELD_RESPAWN = pygame.USEREVENT + 2
     COLLECTABLE_AMMO_RESPAWN = pygame.USEREVENT + 3
@@ -409,6 +421,7 @@ class GameScene(Scene):
     is_alien_phase = True
     start_time = None  # start time used for laser and pause after quiting the options
     start_time_immunity = None  # start time used for immunity bonus
+    start_time_angry_mode = None  # start time used for agry mode debuff
     cheats_on = False  # ammo bonus easter egg code code cheat
 
     def __init__(self):
@@ -499,22 +512,27 @@ class GameScene(Scene):
                         GameScene.collectables.add(
                             Collectable([functions.get_image('img/bullet2.png').convert_alpha()],
                                         random.randint(0, 736),
-                                        -100, 3, "ammo"))
+                                        -100, 2, "ammo"))
                     elif event.type == GameScene.COLLECTABLE_SHIELD_RESPAWN:
                         GameScene.collectables.add(
                             Collectable([functions.get_image('img/shield.png').convert_alpha()],
                                         random.randint(0, 736),
-                                        -100, 3, "shield"))
+                                        -100, 2, "shield"))
                     elif event.type == GameScene.COLLECTABLE_LASER_RESPAWN:
                         GameScene.collectables.add(
                             Collectable([functions.get_image('img/laser_gun.png').convert_alpha()],
                                         random.randint(0, 736),
-                                        -100, 3, "laser"))
+                                        -100, 2, "laser"))
                     elif event.type == GameScene.COLLECTABLE_IMMUNITY_RESPAWN:
                         GameScene.collectables.add(
                             Collectable([functions.get_image('img/immune.png').convert_alpha()],
                                         random.randint(0, 736),
-                                        -100, 3, "immunity"))
+                                        -100, 2, "immunity"))
+                    elif event.type == GameScene.COLLECTABLE_ANGRY_RESPAWN:
+                        GameScene.collectables.add(
+                            Collectable([functions.get_image('img/angry_mode.png').convert_alpha()],
+                                        random.randint(0, 736),
+                                        -100, 2, "angry_mode"))
 
     def update(self, keys):
         # player movement
@@ -571,6 +589,10 @@ class GameScene(Scene):
         # disable immunity bonus - it lasts 7 seconds
         if GameScene.player.is_immune:
             immunity_timer()
+
+        # disable angry_mode debuff
+        if Alien.angry_mode:
+            angry_mode_timer()
 
         # pause the game for 3 seconds after resuming the game
         if GameScene.pause:
@@ -1428,12 +1450,13 @@ def game_erase():
     # disable timers
     pygame.time.set_timer(GameScene.ALIEN_LVL2_RESPAWN, 0)
     pygame.time.set_timer(GameScene.ALIEN_LVL2_STOP, 0)
+    # disable angry mode
+    Alien.angry_mode = False
 
 
 def game_restart():
     global current_score
     current_score = 0
-    Alien.shared_speed = alien_default_speed
     GameScene.player = Player([functions.get_image('img/spaceship.png').convert_alpha()], 370, 480, 3)
     GameScene.player_sprite.add(GameScene.player)
     GameScene.start_time = functions.get_current_time()
@@ -1447,6 +1470,7 @@ def game_restart():
     pygame.time.set_timer(GameScene.COLLECTABLE_SHIELD_RESPAWN, random.randint(60000, 80000))
     pygame.time.set_timer(GameScene.COLLECTABLE_LASER_RESPAWN, random.randint(90000, 110000))
     pygame.time.set_timer(GameScene.COLLECTABLE_IMMUNITY_RESPAWN, random.randint(100000, 130000))
+    pygame.time.set_timer(GameScene.COLLECTABLE_ANGRY_RESPAWN, random.randint(50000, 100000))
     functions.load_music('audio/soundtrack.mp3')
     pygame.mixer.music.play(-1)
     GameScene.game_is_active = True
@@ -1473,7 +1497,18 @@ def immunity_timer():
         immunity_text = GameScene.game_over_font.render(
             "Immune for " + (str((counter - immunity_time) * -1) + " seconds"), True,
             WHITE)
-        frame.blit(immunity_text, (frame_rect.left + 80, frame_rect.bottom - 100))
+        frame.blit(immunity_text, (frame_rect.left + 60, frame_rect.bottom - 150))
+
+
+# count x seconds and then switch off the angry mode debuff
+def angry_mode_timer():
+    counter = functions.get_current_time() - GameScene.start_time_angry_mode
+    if counter >= angry_mode_time:
+        Alien.angry_mode = False
+    else:
+        angry_mode_text = GameScene.game_over_font.render(
+            "Aliens are faster... " + (str((counter - immunity_time) * -1)), True, RED)
+        frame.blit(angry_mode_text, (frame_rect.left + 90, frame_rect.bottom - 80))
 
 
 def fix_alien_overlapping(alien):
@@ -1536,3 +1571,6 @@ def check_if_collectable_collide():
             elif item.category == "immunity":
                 GameScene.player.is_immune = True
                 GameScene.start_time_immunity = functions.get_current_time()
+            elif item.category == "angry_mode":
+                Alien.angry_mode = True
+                GameScene.start_time_angry_mode = functions.get_current_time()
