@@ -1562,15 +1562,15 @@ def check_if_collectable_collide():
     if collectable_player_collision:
         collectable_sound.play()
         for item in collectable_player_collision:
-            if item.category == "ammo":
+            if item.category == "ammo":  # get 1 ammo, you can shoot with ammo
                 GameScene.player.num_of_bullets += 1
-            elif item.category == "shield":
+            elif item.category == "shield":  # get shield, it protects you from 1 hit
                 GameScene.player.has_shield = True
-            elif item.category == "laser":
+            elif item.category == "laser":  # get 1 laser, it destroys aliens in front of you
                 GameScene.player.has_laser = True
-            elif item.category == "immunity":
+            elif item.category == "immunity":  # get immunity, you don't take damage for x seconds
                 GameScene.player.is_immune = True
                 GameScene.start_time_immunity = functions.get_current_time()
-            elif item.category == "angry_mode":
+            elif item.category == "angry_mode":  # activate angry mode, all aliens move faster
                 Alien.angry_mode = True
                 GameScene.start_time_angry_mode = functions.get_current_time()
