@@ -19,6 +19,7 @@ TOMATO = (255, 99, 71)
 frame = pygame.display.set_mode((WIDTH, HEIGHT))
 frame_rect = frame.get_rect()
 current_score = 0
+current_coins = 0
 map_score = 0
 alien_default_speed = 3
 immunity_time = 10
@@ -240,30 +241,45 @@ class Alien(Character):
         collectable_drop = random.randint(0, 100)
         if collectable_drop <= drop_chance:
             collectable_type_drop = random.randint(0, 100)
+            position_fix = 15  # so the collectable appears in the middle of destroyed alien
+            if self.level == 4:  # for big alien
+                position_fix = 110
             if collectable_type_drop <= 60:  # 60% chance that dropped collectable will be ammo
                 GameScene.collectables.add(Collectable([functions.get_image('img/bullet2.png').convert_alpha()],
-                                                       self.rect.x + 15,
+                                                       self.rect.x + position_fix,
                                                        self.rect.y, 2, "ammo"))
             elif 60 < collectable_type_drop <= 70:  # 10% chance that dropped collectable will be shield
                 GameScene.collectables.add(
                     Collectable([functions.get_image('img/shield.png').convert_alpha()],
-                                self.rect.x + 15,
+                                self.rect.x + position_fix,
                                 self.rect.y, 2, "shield"))
             elif 70 < collectable_type_drop <= 80:  # 10% chance that dropped collectable will be laser
                 GameScene.collectables.add(
                     Collectable([functions.get_image('img/laser_gun.png').convert_alpha()],
-                                self.rect.x + 15,
+                                self.rect.x + position_fix,
                                 self.rect.y, 2, "laser"))
             elif 80 < collectable_type_drop <= 90:  # 10% chance that dropped collectable will be immunity
                 GameScene.collectables.add(
                     Collectable([functions.get_image('img/immune.png').convert_alpha()],
-                                self.rect.x + 15,
+                                self.rect.x + position_fix,
                                 self.rect.y, 2, "immunity"))
-            elif 90 < collectable_type_drop <= 100:  # 10% chance that dropped collectable will be angry mode
+            elif 90 < collectable_type_drop <= 99:  # 9% chance that dropped collectable will be angry mode
                 GameScene.collectables.add(
                     Collectable([functions.get_image('img/angry_mode.png').convert_alpha()],
-                                self.rect.x + 15,
+                                self.rect.x + position_fix,
                                 self.rect.y, 2, "angry_mode"))
+            elif 99 < collectable_type_drop <= 100:  # 1% chance that dropped collectable will be coin
+                GameScene.collectables.add(
+                    Collectable([functions.get_image('img/coin0.png').convert_alpha(),
+                                 functions.get_image('img/coin1.png').convert_alpha(),
+                                 functions.get_image('img/coin2.png').convert_alpha(),
+                                 functions.get_image('img/coin3.png').convert_alpha(),
+                                 functions.get_image('img/coin4.png').convert_alpha(),
+                                 functions.get_image('img/coin5.png').convert_alpha(),
+                                 functions.get_image('img/coin6.png').convert_alpha(),
+                                 functions.get_image('img/coin7.png').convert_alpha()],
+                                self.rect.x + position_fix,
+                                self.rect.y, 1, "coin"))
 
 
 class AlienLevel2(Alien):
@@ -399,6 +415,7 @@ class Collectable(Character):
     def __init__(self, image, x, y, speed, category):
         super().__init__(image, x, y, speed)
         self.category = category
+        self.animation_count = 0
 
     # methods
     def draw(self):
@@ -406,6 +423,13 @@ class Collectable(Character):
 
     def update(self):
         self.rect.move_ip(0, self.speed)  # collectables have same speed as aliens
+        # coin animation
+        if self.category == "coin":
+            self.image[0] = self.image[(self.animation_count // 8)]
+            if self.animation_count + 1 < 64:
+                self.animation_count += 1
+            else:
+                self.animation_count = 0
 
     def check_boundaries(self):
         if self.rect.top > HEIGHT:
@@ -1578,8 +1602,9 @@ def game_erase():
 
 
 def game_restart():
-    global current_score, map_score
+    global current_score, map_score, current_coins
     current_score = 0
+    current_coins = 0
     map_score = 0
     GameScene.player = Player([functions.get_image('img/spaceship.png').convert_alpha()], 370, 480, 3)
     GameScene.player_sprite.add(GameScene.player)
@@ -1596,11 +1621,8 @@ def game_restart():
     pygame.time.set_timer(GameScene.COLLECTABLE_SHIELD_RESPAWN, random.randint(60000, 80000))
     pygame.time.set_timer(GameScene.COLLECTABLE_LASER_RESPAWN, random.randint(90000, 110000))
     #pygame.time.set_timer(GameScene.COLLECTABLE_IMMUNITY_RESPAWN, random.randint(100000, 130000))
-    pygame.time.set_timer(GameScene.COLLECTABLE_IMMUNITY_RESPAWN, random.randint(1000, 1300))
     #pygame.time.set_timer(GameScene.COLLECTABLE_ANGRY_RESPAWN, random.randint(50000, 100000))
-    pygame.time.set_timer(GameScene.COLLECTABLE_ANGRY_RESPAWN, random.randint(5000, 10000))
     #pygame.time.set_timer(GameScene.COLLECTABLE_WEAPON_DAMAGED, random.randint(70000, 120000))
-    pygame.time.set_timer(GameScene.COLLECTABLE_WEAPON_DAMAGED, random.randint(7000, 12000))
     functions.load_music('audio/soundtrack.mp3')
     pygame.mixer.music.play(-1)
     GameScene.game_is_active = True
@@ -1637,6 +1659,17 @@ def game_restart():
                      functions.get_image('img/big_alien_explosion3.png').convert_alpha(),
                      functions.get_image('img/big_alien_explosion4.png').convert_alpha(),
                      functions.get_image('img/big_alien_explosion5.png').convert_alpha()], 300, 200, 0, 3))
+    for i in range(10):
+        GameScene.collectables.add(Collectable([functions.get_image('img/coin0.png').convert_alpha(),
+                                     functions.get_image('img/coin1.png').convert_alpha(),
+                                     functions.get_image('img/coin2.png').convert_alpha(),
+                                     functions.get_image('img/coin3.png').convert_alpha(),
+                                     functions.get_image('img/coin4.png').convert_alpha(),
+                                     functions.get_image('img/coin5.png').convert_alpha(),
+                                     functions.get_image('img/coin6.png').convert_alpha(),
+                                     functions.get_image('img/coin7.png').convert_alpha()],
+                                    random.randint(0, 734),
+                                    100, 0, "coin"))
 
 
 def get_ready():  # count 3 seconds before resuming the game, blit the counter
@@ -1751,6 +1784,9 @@ def check_if_collectable_collide():
             elif item.category == "weapon_damaged":
                 GameScene.player.weapon_damaged = True
                 GameScene.start_time_weapon_damaged = functions.get_current_time()
+            elif item.category == "coin":
+                global current_coins
+                current_coins += 1
 
 
 def show_collectables():
@@ -1765,3 +1801,6 @@ def show_collectables():
         frame.blit(functions.get_image('img/immune.png'), (10, 90))
     if Alien.angry_mode:
         frame.blit(functions.get_image('img/angry_mode.png'), (frame_rect.right - 45, 90))
+    if current_coins > 0:
+        for i in range(current_coins):
+            frame.blit(functions.get_image('img/coin3.png'), (28*i+90, 7))
