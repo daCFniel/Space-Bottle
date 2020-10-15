@@ -294,7 +294,7 @@ class Bullet(Character):
 
     # methods
     def draw(self):
-        frame.blit(self.image[0], (self.rect.x + 16, self.rect.y + 10))
+        frame.blit(self.image[0], self.rect)
 
     def update(self):
         self.rect.move_ip(0, -self.speed)
@@ -485,15 +485,16 @@ class GameScene(Scene):
                             # immunity bonus easter egg code cheat
                             GameScene.start_time_immunity = functions.get_current_time() + 50
                             GameScene.player.is_immune = True
-                        elif event.key == controls[4]:
+                        elif event.key == controls[4]:  # shoot bullet
                             if GameScene.player.num_of_bullets > 0:
                                 GameScene.player.num_of_bullets -= 1
                                 bullet_sound.play()  # shooting sound effect
+                                # fix position by 16 pixels so bullet appears in the middle of spaceship
                                 GameScene.bullets.add(
                                     Bullet([functions.get_image('img/bullet.png').convert_alpha()],
-                                           GameScene.player.rect.x,
+                                           GameScene.player.rect.x + 16,
                                            GameScene.player.rect.y, 5))
-                        elif event.key == controls[5]:
+                        elif event.key == controls[5]:  # shoot laser
                             if GameScene.player.has_laser:
                                 laser_sound.play()  # laser sound effect
                                 GameScene.player.has_laser = False
@@ -1511,9 +1512,12 @@ def game_restart():
     GameScene.pause = True
     # reset timers
     pygame.time.set_timer(GameScene.ALIEN_LVL1_STOP, random.randint(40000, 60000))
-    pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(200, 250))
-    pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(4000, 10000))
-    pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(10000, 20000))
+    # pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(200, 250)) # test
+    pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(200000, 250000))
+    # pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(4000, 10000))
+    pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(4000000, 10000000))
+    # pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(10000, 20000))
+    pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(10000000, 20000000))
     pygame.time.set_timer(GameScene.COLLECTABLE_AMMO_RESPAWN, random.randint(25000, 35000))
     pygame.time.set_timer(GameScene.COLLECTABLE_SHIELD_RESPAWN, random.randint(60000, 80000))
     pygame.time.set_timer(GameScene.COLLECTABLE_LASER_RESPAWN, random.randint(90000, 110000))
@@ -1523,7 +1527,6 @@ def game_restart():
     pygame.mixer.music.play(-1)
     GameScene.game_is_active = True
     # place for testing static aliens
-
 
 def get_ready():  # count 3 seconds before resuming the game, blit the counter
     counter = functions.get_current_time() - GameScene.start_time
@@ -1572,7 +1575,7 @@ def fix_alien_overlapping(alien):
 def check_if_alien_collide():
     alien_bullet_collision = pygame.sprite.groupcollide(GameScene.aliens,
                                                         GameScene.bullets, False, True,
-                                                        pygame.sprite.collide_circle)
+                                                        pygame.sprite.collide_mask)
     for alien in alien_bullet_collision:
         explosion_sound.play()
         alien.health -= 1  # reduce alien's health by 1 if it collides with bullet
@@ -1590,11 +1593,8 @@ def check_if_alien_collide():
                                                          pygame.sprite.collide_mask)
 
     bullet_player_collision = pygame.sprite.spritecollide(GameScene.player, GameScene.enemy_bullets, True,
-                                                          pygame.sprite.collide_circle)
-    if alien_player_collision and GameScene.player.has_shield:
-        shield_broke_sound.play()
-        GameScene.player.has_shield = False
-    elif bullet_player_collision and GameScene.player.has_shield:
+                                                          pygame.sprite.collide_mask)
+    if (alien_player_collision or bullet_player_collision) and GameScene.player.has_shield:
         shield_broke_sound.play()
         GameScene.player.has_shield = False
     else:
