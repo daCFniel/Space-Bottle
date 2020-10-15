@@ -1595,9 +1595,12 @@ def game_restart():
     pygame.time.set_timer(GameScene.COLLECTABLE_AMMO_RESPAWN, random.randint(25000, 35000))
     pygame.time.set_timer(GameScene.COLLECTABLE_SHIELD_RESPAWN, random.randint(60000, 80000))
     pygame.time.set_timer(GameScene.COLLECTABLE_LASER_RESPAWN, random.randint(90000, 110000))
-    pygame.time.set_timer(GameScene.COLLECTABLE_IMMUNITY_RESPAWN, random.randint(100000, 130000))
-    pygame.time.set_timer(GameScene.COLLECTABLE_ANGRY_RESPAWN, random.randint(50000, 100000))
-    pygame.time.set_timer(GameScene.COLLECTABLE_WEAPON_DAMAGED, random.randint(70000, 120000))
+    #pygame.time.set_timer(GameScene.COLLECTABLE_IMMUNITY_RESPAWN, random.randint(100000, 130000))
+    pygame.time.set_timer(GameScene.COLLECTABLE_IMMUNITY_RESPAWN, random.randint(1000, 1300))
+    #pygame.time.set_timer(GameScene.COLLECTABLE_ANGRY_RESPAWN, random.randint(50000, 100000))
+    pygame.time.set_timer(GameScene.COLLECTABLE_ANGRY_RESPAWN, random.randint(5000, 10000))
+    #pygame.time.set_timer(GameScene.COLLECTABLE_WEAPON_DAMAGED, random.randint(70000, 120000))
+    pygame.time.set_timer(GameScene.COLLECTABLE_WEAPON_DAMAGED, random.randint(7000, 12000))
     functions.load_music('audio/soundtrack.mp3')
     pygame.mixer.music.play(-1)
     GameScene.game_is_active = True
@@ -1754,3 +1757,11 @@ def show_collectables():
     if GameScene.player.has_shield:
         for i in range(GameScene.player.num_of_shields):
             frame.blit(functions.get_image('img/shield.png'), (34*i+10, 45))
+    if GameScene.player.has_laser:
+        frame.blit(functions.get_image('img/laser_gun.png'), (frame_rect.right - 95, 45))
+    if GameScene.player.weapon_damaged:
+        frame.blit(functions.get_image('img/weapon_damaged.png'), (frame_rect.right - 45, 45))
+    if GameScene.player.is_immune:
+        frame.blit(functions.get_image('img/immune.png'), (10, 90))
+    if Alien.angry_mode:
+        frame.blit(functions.get_image('img/angry_mode.png'), (frame_rect.right - 45, 90))
