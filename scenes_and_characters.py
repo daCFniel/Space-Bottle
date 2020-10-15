@@ -18,6 +18,7 @@ PURPLE = (24, 32, 43)
 frame = pygame.display.set_mode((WIDTH, HEIGHT))
 frame_rect = frame.get_rect()
 current_score = 0
+map_score = 0
 alien_default_speed = 3
 immunity_time = 10
 pause_time = 3
@@ -216,8 +217,9 @@ class Alien(Character):
     def check_boundaries(self):
         if self.rect.top > HEIGHT:
             self.kill()
-            global current_score
+            global current_score, map_score
             current_score += 1
+            map_score += 1
 
 
 class AlienLevel2(Alien):
@@ -255,8 +257,9 @@ class AlienLevel3(Alien):
             self.speed *= -1
         if self.rect.top > HEIGHT:
             self.kill()
-            global current_score
+            global current_score, map_score
             current_score += 1
+            map_score += 1
 
 
 class AlienLevel4(Alien):
@@ -422,12 +425,45 @@ class GameScene(Scene):
     start_time = None  # start time used for laser and pause after quiting the options
     start_time_immunity = None  # start time used for immunity bonus
     start_time_angry_mode = None  # start time used for agry mode debuff
-    cheats_on = False  # ammo bonus easter egg code code cheat
+    cheats_on = False  # ammo bonus easter egg code code cheat]]
 
     def __init__(self):
         super().__init__()
-        self.background = functions.get_image('img/background2.png').convert()
+        self.background = functions.get_image('img/background1.png').convert()
+        self.backgrounds = [functions.get_image('img/background2.png').convert(),
+                            functions.get_image('img/background3.png').convert(),
+                            functions.get_image('img/background4.png').convert(),
+                            functions.get_image('img/background5.png').convert(),
+                            functions.get_image('img/background6.png').convert(),
+                            functions.get_image('img/background7.png').convert(),]
         self.bg_y = 0
+        self.bg_transparency = 0
+
+        self.current_bg = None  # makes the bg change possible (doesn't include first, default bg)
+        self.previous_background = None  # saves the last bg so it allows new bg to appear smoothly
+        self.current_bg_index = -1  # determines which gb is currently displayed, goes up every x points
+        self.switch_background = True  # flag that allows to change backgrounds
+
+        for i in range(len(self.backgrounds)):  # iterate over all backgrounds and change their transparency to 0
+            self.backgrounds[i].set_alpha(0)
+
+    def change_background(self):
+        global map_score
+        print(self.current_bg_index)
+        if map_score >= 200:  # every x points(score) background changes to a random one
+            if self.switch_background is True and self.current_bg_index < len(self.backgrounds) - 1:
+                if self.current_bg is not None:
+                    self.previous_background = self.current_bg
+                self.current_bg_index += 1
+                self.current_bg = self.backgrounds[self.current_bg_index]
+                self.switch_background = False
+                self.bg_transparency = 0
+            if self.bg_transparency < 255:
+                self.bg_transparency += 0.1
+            self.current_bg.set_alpha(self.bg_transparency)
+            if self.bg_transparency >= 255:
+                map_score = 0
+                self.switch_background = True
 
     def event_handling(self, events):
         if not GameScene.pause:
@@ -600,7 +636,7 @@ class GameScene(Scene):
 
     def render(self):
 
-        # background color(RGB) and image
+        # default background color(RGB) and image
         # now animated
         rel_y = self.bg_y % self.background.get_rect().height
         frame.blit(self.background, (0, rel_y - self.background.get_rect().height))
@@ -608,6 +644,14 @@ class GameScene(Scene):
             frame.blit(self.background, (0, rel_y))
         if not GameScene.pause:
             self.bg_y += 1
+
+        # change background
+        self.change_background()
+        # draw the new background
+        if self.previous_background is not None:
+            frame.blit(self.previous_background, (0, 0))
+        if self.current_bg is not None:
+            frame.blit(self.current_bg, (0, 0))
 
         # show ammo (bullets left)
         update_bullets_label(GameScene.bullets_label_x, GameScene.bullets_label_y)
@@ -691,7 +735,7 @@ class GameOptionsScene(Scene):
 
     def render(self):
         # menu surface
-        frame.blit(functions.get_image('img/background2.png').convert(), (0, 0))
+        frame.blit(functions.get_image('img/background1.png').convert(), (0, 0))
         frame.blit(self.menu, self.rect)
 
         # game paused text
@@ -837,7 +881,7 @@ class GameOptionsAudioScene(GameOptionsScene):
 
     def render(self):
         # menu surface
-        frame.blit(functions.get_image('img/background2.png').convert(), (0, 0))
+        frame.blit(functions.get_image('img/background1.png').convert(), (0, 0))
         frame.blit(self.menu, self.rect)
 
         for text in self.texts:
@@ -1455,8 +1499,9 @@ def game_erase():
 
 
 def game_restart():
-    global current_score
+    global current_score, map_score
     current_score = 0
+    map_score = 0
     GameScene.player = Player([functions.get_image('img/spaceship.png').convert_alpha()], 370, 480, 3)
     GameScene.player_sprite.add(GameScene.player)
     GameScene.start_time = functions.get_current_time()
