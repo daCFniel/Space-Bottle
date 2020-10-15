@@ -198,6 +198,7 @@ class Alien(Character):
         self.level = 1
         self.health = health
         self.animation_count = 0
+        self.drop_chance = 1
 
     # methods
     def draw(self):
@@ -211,10 +212,13 @@ class Alien(Character):
         # check if alien's health reaches 0, if so - kill it
         if self.health == 0:
             # galactic dust animation upon death
+            # animation speed - x(here 4) * number of images (here 4) + x(here 4) = 20
+            # too speed up animation make x lower, to slow down animation, make x larger
             self.image[0] = self.image[self.animation_count // 4]
             if self.animation_count + 1 < 20:
                 self.animation_count += 1
             else:
+                self.drop_collectable(self.drop_chance)
                 self.kill()
 
     def action(self):
@@ -227,17 +231,50 @@ class Alien(Character):
             current_score += 1
             map_score += 1
 
+    # Param drop_chance: chance (0-100%) that alien will drop collectable upon death
+    def drop_collectable(self, drop_chance):
+        collectable_drop = random.randint(0, 100)
+        print(collectable_drop)
+        if collectable_drop <= drop_chance:
+            collectable_type_drop = random.randint(0, 100)
+            if collectable_type_drop <= 60:  # 60% chance that dropped collectable will be ammo
+                GameScene.collectables.add(Collectable([functions.get_image('img/bullet2.png').convert_alpha()],
+                                                       self.rect.x + 15,
+                                                       self.rect.y, 2, "ammo"))
+            elif 60 < collectable_type_drop <= 70:  # 10% chance that dropped collectable will be shield
+                GameScene.collectables.add(
+                    Collectable([functions.get_image('img/shield.png').convert_alpha()],
+                                self.rect.x + 15,
+                                self.rect.y, 2, "shield"))
+            elif 70 < collectable_type_drop <= 80:  # 10% chance that dropped collectable will be laser
+                GameScene.collectables.add(
+                    Collectable([functions.get_image('img/laser_gun.png').convert_alpha()],
+                                self.rect.x + 15,
+                                self.rect.y, 2, "laser"))
+            elif 80 < collectable_type_drop <= 90:  # 10% chance that dropped collectable will be immunity
+                GameScene.collectables.add(
+                    Collectable([functions.get_image('img/immune.png').convert_alpha()],
+                                self.rect.x + 15,
+                                self.rect.y, 2, "immunity"))
+            elif 90 < collectable_type_drop <= 100:  # 10% chance that dropped collectable will be angry mode
+                GameScene.collectables.add(
+                    Collectable([functions.get_image('img/angry_mode.png').convert_alpha()],
+                                self.rect.x + 15,
+                                self.rect.y, 2, "angry_mode"))
+
 
 class AlienLevel2(Alien):
     def __init__(self, image, x, y, speed, health):
         super().__init__(image, x, y, speed, health)
         self.level = 2
+        self.drop_chance = 30
 
 
 class AlienLevel3(Alien):
     def __init__(self, image, x, y, speed, health):
         super().__init__(image, x, y, speed, health)
         self.level = 3
+        self.drop_chance = 60
 
     def draw(self):
         if self.health == 1:
@@ -251,7 +288,12 @@ class AlienLevel3(Alien):
             self.rect.move_ip(self.speed, 1)
         # check if alien's health reaches 0, if so - kill it
         if self.health == 0:
-            self.kill()
+            self.image[0] = self.image[(self.animation_count // 5) + 1]
+            if self.animation_count + 1 < 25:
+                self.animation_count += 1
+            else:
+                self.drop_collectable(self.drop_chance)
+                self.kill()
 
     def action(self):
         if random.randint(0, 200) == 0:
@@ -272,6 +314,7 @@ class AlienLevel4(Alien):
     def __init__(self, image, x, y, speed, health):
         super().__init__(image, x, y, speed, health)
         self.level = 4
+        self.drop_chance = 90
 
     def draw(self):
         if self.health == 2:
@@ -293,6 +336,8 @@ class AlienLevel4(Alien):
             if self.animation_count + 1 < 56:
                 self.animation_count += 1
             else:  #
+                self.drop_collectable(self.drop_chance)
+                self.kill()
                 GameScene.aliens.empty()
 
 
@@ -531,12 +576,12 @@ class GameScene(Scene):
                             if random_number == i:
                                 extra = 95  # width of the hole in the alien level 2 wall
                             GameScene.aliens.add(
-                                AlienLevel2([functions.get_image('img/alien3.png').convert_alpha()],
+                                AlienLevel2([functions.get_image('img/alien2.png').convert_alpha()],
                                             64 * i + extra, -100, 2, 1))
                     elif event.type == GameScene.ALIEN_LVL3_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
-                            AlienLevel3([functions.get_image('img/alien4.png').convert_alpha(),
-                                         functions.get_image('img/alien4_1hp.png').convert_alpha()],
+                            AlienLevel3([functions.get_image('img/alien3.png').convert_alpha(),
+                                         functions.get_image('img/alien3_1hp.png').convert_alpha()],
                                         random.randint(0, 736),
                                         random.randint(-1000, -200), 2, 2))
                     elif event.type == GameScene.ALIEN_LVL4_RESPAWN:  # spawn level 1 alien
@@ -1409,7 +1454,7 @@ def get_current_rank():
     elif current_rank == 8:
         return functions.get_image('img/ranks/rank8.png').convert_alpha()
     else:
-        return functions.get_image('img/alien2.png').convert_alpha()
+        return functions.get_image('img/alien_cow.png').convert_alpha()
 
 
 def update_top_score():
@@ -1521,13 +1566,12 @@ def game_restart():
     GameScene.start_time = functions.get_current_time()
     GameScene.pause = True
     # reset timers
-    pygame.time.set_timer(GameScene.ALIEN_LVL1_STOP, random.randint(40000, 60000))
+    # pygame.time.set_timer(GameScene.ALIEN_LVL1_STOP, random.randint(40000, 60000))
     # pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(200, 250)) # test
-    pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(2000000, 2500000))
     # pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(4000, 10000))
-    pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(4000000, 10000000))
+    # pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(4000000, 10000000))
     # pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(10000, 20000))
-    pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(10000000, 20000000))
+    # pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(10000000, 20000000))
     pygame.time.set_timer(GameScene.COLLECTABLE_AMMO_RESPAWN, random.randint(25000, 35000))
     pygame.time.set_timer(GameScene.COLLECTABLE_SHIELD_RESPAWN, random.randint(60000, 80000))
     pygame.time.set_timer(GameScene.COLLECTABLE_LASER_RESPAWN, random.randint(90000, 110000))
@@ -1537,33 +1581,43 @@ def game_restart():
     pygame.mixer.music.play(-1)
     GameScene.game_is_active = True
     # place for testing static aliens
-    for i in range(3):
+    for i in range(2):
         GameScene.aliens.add(Alien([functions.get_image('img/alien.png').convert_alpha(),
                                     functions.get_image('img/dust0.png').convert_alpha(),
                                     functions.get_image('img/dust1.png').convert_alpha(),
                                     functions.get_image('img/dust2.png').convert_alpha(),
                                     functions.get_image('img/dust3.png').convert_alpha()], i * 100,
                                    200, 0, 1))
-    GameScene.aliens.add(AlienLevel3([functions.get_image('img/alien4.png').convert_alpha(),
-                                      functions.get_image('img/alien4_1hp.png').convert_alpha()],
-                                     random.randint(0, 736),
-                                     0, 2, 2))
+    GameScene.aliens.add(AlienLevel2([functions.get_image('img/alien2.png').convert_alpha(),
+                                      functions.get_image('img/dust0.png').convert_alpha(),
+                                      functions.get_image('img/dust1.png').convert_alpha(),
+                                      functions.get_image('img/dust2.png').convert_alpha(),
+                                      functions.get_image('img/dust3.png').convert_alpha()], 50,
+                                     100, 0, 1))
+    GameScene.aliens.add(
+        AlienLevel3([functions.get_image('img/alien3.png').convert_alpha(),
+                     functions.get_image('img/alien3_1hp.png').convert_alpha(),
+                     functions.get_image('img/alien3_explosion0.png').convert_alpha(),
+                     functions.get_image('img/alien3_explosion1.png').convert_alpha(),
+                     functions.get_image('img/alien3_explosion2.png').convert_alpha(),
+                     functions.get_image('img/alien3_explosion3.png').convert_alpha()],
+                    120,
+                    100, 0, 2))
     GameScene.aliens.add(
         AlienLevel4([functions.get_image('img/big_alien.png').convert_alpha(),
                      functions.get_image('img/big_alien_1hp.png').convert_alpha(),
                      functions.get_image('img/big_alien_2hp.png').convert_alpha(),
-                     functions.get_image('img/explosion0.png').convert_alpha(),
-                     functions.get_image('img/explosion1.png').convert_alpha(),
-                     functions.get_image('img/explosion2.png').convert_alpha(),
-                     functions.get_image('img/explosion3.png').convert_alpha(),
-                     functions.get_image('img/explosion4.png').convert_alpha(),
-                     functions.get_image('img/explosion5.png').convert_alpha()], 300, 200, 0, 3))
+                     functions.get_image('img/big_alien_explosion0.png').convert_alpha(),
+                     functions.get_image('img/big_alien_explosion1.png').convert_alpha(),
+                     functions.get_image('img/big_alien_explosion2.png').convert_alpha(),
+                     functions.get_image('img/big_alien_explosion3.png').convert_alpha(),
+                     functions.get_image('img/big_alien_explosion4.png').convert_alpha(),
+                     functions.get_image('img/big_alien_explosion5.png').convert_alpha()], 300, 200, 0, 3))
 
 
 def get_ready():  # count 3 seconds before resuming the game, blit the counter
     counter = functions.get_current_time() - GameScene.start_time
     if counter >= pause_time:
-        pygame.time.set_timer(GameScene.ALIEN_LVL2_STOP, 22000)
         GameScene.pause = False
         pygame.mixer.music.unpause()
     else:
