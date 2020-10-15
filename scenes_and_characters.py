@@ -429,13 +429,15 @@ class GameScene(Scene):
 
     def __init__(self):
         super().__init__()
-        self.background = functions.get_image('img/background1.png').convert()
+        self.background = functions.get_image('img/background1.png').convert()  # default background player starts with
+        # list of other backgrounds,
+        # background changes through the game
         self.backgrounds = [functions.get_image('img/background2.png').convert(),
                             functions.get_image('img/background3.png').convert(),
                             functions.get_image('img/background4.png').convert(),
                             functions.get_image('img/background5.png').convert(),
                             functions.get_image('img/background6.png').convert(),
-                            functions.get_image('img/background7.png').convert(),]
+                            functions.get_image('img/background7.png').convert()]
         self.bg_y = 0
         self.bg_transparency = 0
 
@@ -449,8 +451,8 @@ class GameScene(Scene):
 
     def change_background(self):
         global map_score
-        print(self.current_bg_index)
-        if map_score >= 200:  # every x points(score) background changes to a random one
+        if map_score >= 200:  # every 200 points(score) background changes to a random one
+            # allow to change background once and prevent from going out of index
             if self.switch_background is True and self.current_bg_index < len(self.backgrounds) - 1:
                 if self.current_bg is not None:
                     self.previous_background = self.current_bg
@@ -462,7 +464,7 @@ class GameScene(Scene):
                 self.bg_transparency += 0.1
             self.current_bg.set_alpha(self.bg_transparency)
             if self.bg_transparency >= 255:
-                map_score = 0
+                map_score = 0  # reset map score
                 self.switch_background = True
 
     def event_handling(self, events):
