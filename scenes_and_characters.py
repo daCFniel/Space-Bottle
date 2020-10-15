@@ -1347,6 +1347,8 @@ class GameFailScene(Scene):
             self.switch_to_scene(GameScene())
 
         def button2_action():
+            pygame.mixer.music.load('audio/menu_music.mp3')
+            pygame.mixer.music.play(-1)
             self.switch_to_scene(MenuScene())
 
         self.button.on_click_action(lambda: button_action())
