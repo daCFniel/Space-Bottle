@@ -197,6 +197,7 @@ class Alien(Character):
         super().__init__(image, x, y, speed)
         self.level = 1
         self.health = health
+        self.animation_count = 0
 
     # methods
     def draw(self):
@@ -209,7 +210,12 @@ class Alien(Character):
             self.rect.move_ip(0, self.speed)
         # check if alien's health reaches 0, if so - kill it
         if self.health == 0:
-            self.kill()
+            # galactic dust animation upon death
+            self.image[0] = self.image[self.animation_count // 4]
+            if self.animation_count + 1 < 20:
+                self.animation_count += 1
+            else:
+                self.kill()
 
     def action(self):
         pass
@@ -280,10 +286,14 @@ class AlienLevel4(Alien):
         else:
             self.rect.move_ip(0, self.speed)
         # check if alien's health reaches 0, if so - kill it
-        if self.health == 0:  # explode and die
+        if self.health == 0:
+            self.image[0] = self.image[(self.animation_count // 8) + 2]
+            # explosion animation upon death
             big_explosion_sound.play()
-            GameScene.aliens.empty()
-            self.kill()
+            if self.animation_count + 1 < 56:
+                self.animation_count += 1
+            else:  #
+                GameScene.aliens.empty()
 
 
 class Bullet(Character):
@@ -1513,9 +1523,9 @@ def game_restart():
     # reset timers
     pygame.time.set_timer(GameScene.ALIEN_LVL1_STOP, random.randint(40000, 60000))
     # pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(200, 250)) # test
-    pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(200000, 250000))
+    pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(2000000, 2500000))
     # pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(4000, 10000))
-    pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(400, 1000))
+    pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(4000000, 10000000))
     # pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(10000, 20000))
     pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(10000000, 20000000))
     pygame.time.set_timer(GameScene.COLLECTABLE_AMMO_RESPAWN, random.randint(25000, 35000))
@@ -1527,6 +1537,28 @@ def game_restart():
     pygame.mixer.music.play(-1)
     GameScene.game_is_active = True
     # place for testing static aliens
+    for i in range(3):
+        GameScene.aliens.add(Alien([functions.get_image('img/alien.png').convert_alpha(),
+                                    functions.get_image('img/dust0.png').convert_alpha(),
+                                    functions.get_image('img/dust1.png').convert_alpha(),
+                                    functions.get_image('img/dust2.png').convert_alpha(),
+                                    functions.get_image('img/dust3.png').convert_alpha()], i * 100,
+                                   200, 0, 1))
+    GameScene.aliens.add(AlienLevel3([functions.get_image('img/alien4.png').convert_alpha(),
+                                      functions.get_image('img/alien4_1hp.png').convert_alpha()],
+                                     random.randint(0, 736),
+                                     0, 2, 2))
+    GameScene.aliens.add(
+        AlienLevel4([functions.get_image('img/big_alien.png').convert_alpha(),
+                     functions.get_image('img/big_alien_1hp.png').convert_alpha(),
+                     functions.get_image('img/big_alien_2hp.png').convert_alpha(),
+                     functions.get_image('img/explosion0.png').convert_alpha(),
+                     functions.get_image('img/explosion1.png').convert_alpha(),
+                     functions.get_image('img/explosion2.png').convert_alpha(),
+                     functions.get_image('img/explosion3.png').convert_alpha(),
+                     functions.get_image('img/explosion4.png').convert_alpha(),
+                     functions.get_image('img/explosion5.png').convert_alpha()], 300, 200, 0, 3))
+
 
 def get_ready():  # count 3 seconds before resuming the game, blit the counter
     counter = functions.get_current_time() - GameScene.start_time
@@ -1569,7 +1601,7 @@ def fix_alien_overlapping(alien):
             any(alien.rect.colliderect(collectable.rect) for collectable in
                 GameScene.collectables):
         if alien.level == 1:
-            alien.kill()
+            alien.health = 0
 
 
 def check_if_alien_collide():
