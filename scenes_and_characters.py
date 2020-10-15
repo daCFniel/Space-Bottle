@@ -13,6 +13,7 @@ GREY = (70, 70, 70)
 ORANGE = (255, 117, 26)
 BLUE = (54, 191, 191)
 PURPLE = (24, 32, 43)
+TOMATO = (255, 99, 71)
 
 # Global variables
 frame = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -21,8 +22,9 @@ current_score = 0
 map_score = 0
 alien_default_speed = 3
 immunity_time = 10
-pause_time = 3
 angry_mode_time = 10
+weapon_damaged_time = 15
+pause_time = 3
 
 # audio
 bullet_sound = functions.get_sound('audio/laser.wav')
@@ -101,6 +103,7 @@ class Player(Character):
         self.has_shield = False
         self.has_laser = False
         self.is_immune = False
+        self.weapon_damaged = False
         self.num_of_bullets = 3
         self.images = []
         self.images.append(self.image[0])
@@ -234,7 +237,6 @@ class Alien(Character):
     # Param drop_chance: chance (0-100%) that alien will drop collectable upon death
     def drop_collectable(self, drop_chance):
         collectable_drop = random.randint(0, 100)
-        print(collectable_drop)
         if collectable_drop <= drop_chance:
             collectable_type_drop = random.randint(0, 100)
             if collectable_type_drop <= 60:  # 60% chance that dropped collectable will be ammo
@@ -461,18 +463,18 @@ class GameScene(Scene):
     collectables = pygame.sprite.Group()
 
     # events
-    ALIEN_LVL1_RESPAWN = pygame.USEREVENT
-    COLLECTABLE_IMMUNITY_RESPAWN = pygame.USEREVENT - 1
+    COLLECTABLE_WEAPON_DAMAGED = pygame.USEREVENT - 4
     COLLECTABLE_ANGRY_RESPAWN = pygame.USEREVENT - 3
+    ALIEN_LVL4_RESPAWN = pygame.USEREVENT - 2
+    COLLECTABLE_IMMUNITY_RESPAWN = pygame.USEREVENT - 1
+    ALIEN_LVL1_RESPAWN = pygame.USEREVENT
     COLLECTABLE_LASER_RESPAWN = pygame.USEREVENT + 1
     COLLECTABLE_SHIELD_RESPAWN = pygame.USEREVENT + 2
     COLLECTABLE_AMMO_RESPAWN = pygame.USEREVENT + 3
     ALIEN_LVL3_RESPAWN = pygame.USEREVENT + 4
-    ALIEN_LVL4_RESPAWN = pygame.USEREVENT - 2
     ALIEN_LVL1_STOP = pygame.USEREVENT + 5
     ALIEN_LVL2_RESPAWN = pygame.USEREVENT + 6
     ALIEN_LVL2_STOP = pygame.USEREVENT + 7
-
     # active the game and alien phase, set start time, initialise cheats
     game_is_active = True
     pause = False
@@ -480,6 +482,7 @@ class GameScene(Scene):
     start_time = None  # start time used for laser and pause after quiting the options
     start_time_immunity = None  # start time used for immunity bonus
     start_time_angry_mode = None  # start time used for agry mode debuff
+    start_time_weapon_damaged = None  # start time used for weapon damaged debuff
     cheats_on = False  # ammo bonus easter egg code code cheat]]
 
     def __init__(self):
@@ -541,7 +544,7 @@ class GameScene(Scene):
                             GameScene.start_time_immunity = functions.get_current_time() + 50
                             GameScene.player.is_immune = True
                         elif event.key == controls[4]:  # shoot bullet
-                            if GameScene.player.num_of_bullets > 0:
+                            if GameScene.player.num_of_bullets > 0 and GameScene.player.weapon_damaged is False:
                                 GameScene.player.num_of_bullets -= 1
                                 bullet_sound.play()  # shooting sound effect
                                 # fix position by 16 pixels so bullet appears in the middle of spaceship
@@ -626,6 +629,12 @@ class GameScene(Scene):
                             Collectable([functions.get_image('img/angry_mode.png').convert_alpha()],
                                         random.randint(0, 736),
                                         -100, 2, "angry_mode"))
+                    elif event.type == GameScene.COLLECTABLE_WEAPON_DAMAGED:
+                        GameScene.collectables.add(
+                            Collectable([functions.get_image('img/weapon_damaged.png').convert_alpha()],
+                                        random.randint(0, 736),
+                                        -100, 2, "weapon_damaged")
+                        )
 
     def update(self, keys):
         # player movement
@@ -686,6 +695,10 @@ class GameScene(Scene):
         # disable angry_mode debuff
         if Alien.angry_mode:
             angry_mode_timer()
+
+        # disable weapon_damaged
+        if GameScene.player.weapon_damaged:
+            weapon_damaged_timer()
 
         # pause the game for 3 seconds after resuming the game
         if GameScene.pause:
@@ -1555,6 +1568,7 @@ def game_erase():
     pygame.time.set_timer(GameScene.ALIEN_LVL2_STOP, 0)
     # disable angry mode
     Alien.angry_mode = False
+    GameScene.player.weapon_damaged = False
 
 
 def game_restart():
@@ -1577,6 +1591,7 @@ def game_restart():
     pygame.time.set_timer(GameScene.COLLECTABLE_LASER_RESPAWN, random.randint(90000, 110000))
     pygame.time.set_timer(GameScene.COLLECTABLE_IMMUNITY_RESPAWN, random.randint(100000, 130000))
     pygame.time.set_timer(GameScene.COLLECTABLE_ANGRY_RESPAWN, random.randint(50000, 100000))
+    pygame.time.set_timer(GameScene.COLLECTABLE_WEAPON_DAMAGED, random.randint(70000, 120000))
     functions.load_music('audio/soundtrack.mp3')
     pygame.mixer.music.play(-1)
     GameScene.game_is_active = True
@@ -1645,8 +1660,18 @@ def angry_mode_timer():
         Alien.angry_mode = False
     else:
         angry_mode_text = GameScene.game_over_font.render(
-            "Aliens are faster... " + (str((counter - immunity_time) * -1)), True, RED)
+            "Aliens are faster...  " + (str((counter - angry_mode_time) * -1)), True, RED)
         frame.blit(angry_mode_text, (frame_rect.left + 90, frame_rect.bottom - 80))
+
+
+def weapon_damaged_timer():
+    counter = functions.get_current_time() - GameScene.start_time_weapon_damaged
+    if counter >= weapon_damaged_time:
+        GameScene.player.weapon_damaged = False
+    else:
+        weapon_damaged_text = functions.get_font('fonts/Space_Galaxy.ttf', 40).render(
+            "Fixing damaged weapon... " + (str((counter - weapon_damaged_time) * -1)), True, TOMATO)
+        frame.blit(weapon_damaged_text, (frame_rect.centerx - 170, frame_rect.centery - 20))
 
 
 def fix_alien_overlapping(alien):
@@ -1672,7 +1697,8 @@ def check_if_alien_collide():
                                                             pygame.sprite.collide_mask)
         for alien in alien_laser_collision:
             explosion_sound.play()
-            alien.health -= 1
+            if (alien.health > 0):
+                alien.health -= 1
 
     alien_player_collision = pygame.sprite.spritecollide(GameScene.player,
                                                          GameScene.aliens, True,
@@ -1709,3 +1735,6 @@ def check_if_collectable_collide():
             elif item.category == "angry_mode":  # activate angry mode, all aliens move faster
                 Alien.angry_mode = True
                 GameScene.start_time_angry_mode = functions.get_current_time()
+            elif item.category == "weapon_damaged":
+                GameScene.player.weapon_damaged = True
+                GameScene.start_time_weapon_damaged = functions.get_current_time()
