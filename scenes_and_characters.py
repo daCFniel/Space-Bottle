@@ -503,7 +503,6 @@ class GameScene(Scene):
                         elif event.key == pygame.K_ESCAPE:
                             pygame.time.set_timer(GameScene.ALIEN_LVL2_STOP, 0)
                             self.switch_to_scene(GameOptionsScene())
-                            pygame.mixer.music.pause()
                             menu_sound.play()
 
                     elif event.type == pygame.KEYUP:
@@ -1533,6 +1532,7 @@ def get_ready():  # count 3 seconds before resuming the game, blit the counter
     else:
         counter_text = GameScene.counter_font.render(str((counter - pause_time) * -1), True, WHITE)
         frame.blit(counter_text, (370, 210))
+        pygame.mixer.music.pause()
 
 
 # count x seconds and then take off the immunity buff
