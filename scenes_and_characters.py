@@ -1515,7 +1515,7 @@ def game_restart():
     # pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(200, 250)) # test
     pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(200000, 250000))
     # pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(4000, 10000))
-    pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(4000000, 10000000))
+    pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(400, 1000))
     # pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(10000, 20000))
     pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(10000000, 20000000))
     pygame.time.set_timer(GameScene.COLLECTABLE_AMMO_RESPAWN, random.randint(25000, 35000))
