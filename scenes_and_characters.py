@@ -105,6 +105,7 @@ class Player(Character):
         self.is_immune = False
         self.weapon_damaged = False
         self.num_of_bullets = 3
+        self.num_of_shields = 0
         self.images = []
         self.images.append(self.image[0])
         self.images.append(functions.get_image('img/spaceship_l2.png').convert_alpha())
@@ -539,6 +540,8 @@ class GameScene(Scene):
                         elif event.key == pygame.K_8:
                             # shield bonus easter egg code code cheat
                             GameScene.player.has_shield = True
+                            if GameScene.player.num_of_shields < 4:
+                                GameScene.player.num_of_shields += 1
                         elif event.key == pygame.K_7:
                             # immunity bonus easter egg code cheat
                             GameScene.start_time_immunity = functions.get_current_time() + 50
@@ -728,6 +731,9 @@ class GameScene(Scene):
 
         # show score label
         update_score_label(GameScene.score_label_x, GameScene.score_label_y)
+
+        # show collectables
+        show_collectables()
 
         # indicate that game is over via label
         if not GameScene.game_is_active:
@@ -1508,7 +1514,7 @@ def promote():
 
 # game functions
 def update_score_label(x, y):
-    if not GameScene.player.has_laser:
+    if not GameScene.player.has_shield:
         score_text = GameScene.score_font.render("Score: " + str(current_score), True, WHITE, BLACK)
     else:
         score_text = GameScene.score_font.render("Score: " + str(current_score), True, WHITE,
@@ -1517,7 +1523,7 @@ def update_score_label(x, y):
 
 
 def update_bullets_label(x, y):
-    if not GameScene.player.has_shield:
+    if not GameScene.player.has_laser:
         num_of_bullets_text = GameScene.score_font.render(
             "Bullets: " + str(GameScene.player.num_of_bullets), True,
             WHITE, BLACK)
@@ -1708,7 +1714,9 @@ def check_if_alien_collide():
                                                           pygame.sprite.collide_mask)
     if (alien_player_collision or bullet_player_collision) and GameScene.player.has_shield:
         shield_broke_sound.play()
-        GameScene.player.has_shield = False
+        GameScene.player.num_of_shields -= 1
+        if GameScene.player.num_of_shields == 0:
+            GameScene.player.has_shield = False
     else:
         if alien_player_collision or bullet_player_collision:
             GameScene.game_is_active = False
@@ -1727,6 +1735,8 @@ def check_if_collectable_collide():
                 GameScene.player.num_of_bullets += 1
             elif item.category == "shield":  # get shield, it protects you from 1 hit
                 GameScene.player.has_shield = True
+                if GameScene.player.num_of_shields < 4:
+                    GameScene.player.num_of_shields += 1
             elif item.category == "laser":  # get 1 laser, it destroys aliens in front of you
                 GameScene.player.has_laser = True
             elif item.category == "immunity":  # get immunity, you don't take damage for x seconds
@@ -1738,3 +1748,9 @@ def check_if_collectable_collide():
             elif item.category == "weapon_damaged":
                 GameScene.player.weapon_damaged = True
                 GameScene.start_time_weapon_damaged = functions.get_current_time()
+
+
+def show_collectables():
+    if GameScene.player.has_shield:
+        for i in range(GameScene.player.num_of_shields):
+            frame.blit(functions.get_image('img/shield.png'), (34*i+10, 45))
