@@ -81,14 +81,10 @@ exit()
 # formacje alienów aka wzorki
 # rozne rodzaje strzałow
 # przyśpieszenie statku
-# mozliwosc przyciszenia dzwieku
-
 # suwak
-# inne typy alienów
 # liczenie czasu podczas gry
-# ruszające się tło
 # levele
-# actual gameplay (trudnosc)
+
 
 # Done
 # podnoszenie pociskow
@@ -112,7 +108,6 @@ exit()
 # mask collision system (pixel to pixel)
 # laser
 # scene menagement
-# option menu
 # player turbo with shift
 # podzial na pliki
 # option menu
@@ -129,9 +124,9 @@ exit()
 # ranks/exp + saving
 # endless mode menu page
 # ranks images and names
-# menu and options improvments (back buttom)
+# menu and options improvments (back buttom )
 # all settings are now saved to the file
-# new controls for arrows control settings  (+new controls image)
+# new controls for arrows control settings (+new controls image)
 # dwa nowe typy aliena
 # ruszające się tło
-# animacje turbo
+# turbo animations
