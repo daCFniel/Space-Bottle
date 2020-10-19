@@ -73,6 +73,8 @@ music_volume = int(data[4])  # default value 50
 sounds_volume = int(data[5])  # default value 40
 # current display mode
 display_mode = int(data[6])  # Integer 0 or 1 where 0 - window; 1 - fullscreen
+# total current coins
+total_coins = int(data[7])
 
 # exp required for next promotion based on current rank (math module used to make the numbers nonlinear)
 exp_required_total = int(999 * math.sqrt(math.pow(2, current_rank)))
@@ -1039,6 +1041,16 @@ class MenuScene(Scene):
         self.rank_img_rect = self.rank_img.get_rect()
         self.rank_img_rect.bottomright = frame_rect.bottomright
 
+        # coins text and img
+        self.coin_img = functions.get_image('img/coin3.png')
+        self.coin_img_rect = self.coin_img.get_rect()
+        self.coin_img_rect.bottomleft = frame_rect.bottomleft
+        self.coin_img_rect.x += 15
+        if total_coins >= 10:
+            self.coin_img_rect.x += 10
+        self.coins_text = gui_elements.Text(str(total_coins), WHITE, self.menu_font)
+        self.coins_text.rect.bottomleft = frame_rect.bottomleft
+
     def event_handling(self, events):
         pass
 
@@ -1070,6 +1082,9 @@ class MenuScene(Scene):
         frame.blit(self.logo, self.logo_rect)
         # rank preview
         frame.blit(self.rank_img, self.rank_img_rect)
+        # coins preview
+        self.coins_text.write(frame)
+        frame.blit(self.coin_img, self.coin_img_rect)
         # Button draw with mouse hover effect
         # Button text
         for button in self.buttons:
@@ -1405,7 +1420,7 @@ class GameFailScene(Scene):
         self.game_over_font = functions.get_font('fonts/Space_Galaxy.ttf', 90)
         self.try_again_font = functions.get_font('fonts/Space_Galaxy.ttf', 50)
         # Text
-        self.game_over_text = gui_elements.Text("Game Over!", WHITE, self.game_over_font, BLACK)
+        self.game_over_text = gui_elements.Text("Game Over", WHITE, self.game_over_font, BLACK)
         self.game_over_text.rect.centerx = frame_rect.centerx
         self.game_over_text.rect.y = 160
         self.promotion_text = gui_elements.Text("YOU GOT PROMOTED", ORANGE, self.game_over_font)
@@ -1414,6 +1429,8 @@ class GameFailScene(Scene):
         self.top_score_text = gui_elements.Text("NEW TOP SCORE", BLUE, self.game_over_font)
         self.top_score_text.rect.midbottom = frame_rect.midbottom
         self.top_score_text.rect.y -= 100
+        self.coins_collected_text = gui_elements.Text(str(current_coins)+" Coins Collected", WHITE, self.try_again_font)
+        self.coins_collected_text.rect.midbottom = frame_rect.midbottom
         self.texts = [self.game_over_text]
         # Button
         self.button = gui_elements.Button(0, 0, 180, 80, WHITE, BLACK, "Try Again")
@@ -1424,6 +1441,7 @@ class GameFailScene(Scene):
 
         got_top_score = update_top_score()  # update the top score if player hits the new record
         got_promoted = check_if_promotion()  # add exp and check if player is eligible for promotion
+        got_coins = update_total_coins()  # add coins collected in this game to the total amount of coins
 
         # play sound according to player results and write appropriate text
         if got_top_score and got_promoted:
@@ -1438,6 +1456,8 @@ class GameFailScene(Scene):
             self.texts.append(self.promotion_text)
         else:
             fail_sound.play()
+        if got_coins:
+            self.texts.append(self.coins_collected_text)
 
     def event_handling(self, events):
         for event in events:
@@ -1515,11 +1535,20 @@ def update_top_score():
         return True
 
 
+def update_total_coins():
+    global total_coins, current_coins
+    if current_coins > 0:
+        total_coins += current_coins
+        save_data()
+        return True
+
+
+
 # save all data to the file, save/backup progress
 def save_data():
     global data, file
     data = [str(current_rank) + '\n', str(top_score) + '\n', str(current_exp) + '\n', str(current_controls) + '\n',
-            str(music_volume) + '\n', str(sounds_volume) + '\n', str(display_mode)]
+            str(music_volume) + '\n', str(sounds_volume) + '\n', str(display_mode) + '\n', str(total_coins) + '\n']
     # write everything
     with open('fonts/font_size.txt', 'w') as file:
         file.writelines(data)
@@ -1594,6 +1623,7 @@ def game_over_label():
 
 
 def game_erase():
+    # remove characters and objects
     GameScene.player_sprite.empty()
     GameScene.aliens.empty()
     GameScene.collectables.empty()
@@ -1603,7 +1633,7 @@ def game_erase():
     # disable timers
     pygame.time.set_timer(GameScene.ALIEN_LVL2_RESPAWN, 0)
     pygame.time.set_timer(GameScene.ALIEN_LVL2_STOP, 0)
-    # disable angry mode
+    # disable modes
     Alien.angry_mode = False
     GameScene.player.weapon_damaged = False
 
