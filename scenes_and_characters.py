@@ -28,11 +28,10 @@ weapon_damaged_time = 15
 pause_time = 3
 
 # audio
-bullet_sound = functions.get_sound('audio/laser.wav')
+bullet_sound = functions.get_sound('audio/bullet.wav')
 explosion_sound = functions.get_sound('audio/explosion.wav')
 shield_broke_sound = functions.get_sound('audio/shield_broke.wav')
-collectable_sound = functions.get_sound('audio/score.wav')
-laser_sound = functions.get_sound('audio/laser_beam.wav')
+laser_beam_sound = functions.get_sound('audio/laser_beam.wav')
 cow_sound = functions.get_sound('audio/cow.wav')
 fail_sound = functions.get_sound('audio/fail.wav')
 promotion_sound = functions.get_sound('audio/promotion.wav')
@@ -41,9 +40,17 @@ promotion_and_score_sound = functions.get_sound('audio/promotion_and_score.wav')
 menu_sound = functions.get_sound('audio/entering_menu.wav')
 accept_sound = functions.get_sound('audio/accept.wav')
 big_explosion_sound = functions.get_sound('audio/big_explosion.wav')
-sounds = [bullet_sound, explosion_sound, shield_broke_sound, collectable_sound, laser_sound, cow_sound, fail_sound,
-          promotion_sound, top_score_sound, promotion_and_score_sound,
-          menu_sound, accept_sound, big_explosion_sound]
+collectable_collection_sound = functions.get_sound('audio/score.wav')
+shield_collection_sound = functions.get_sound('audio/shield.wav')
+immunity_collection_sound = functions.get_sound('audio/immunity.wav')
+angry_mode_collection_sound = functions.get_sound('audio/angry_mode.wav')
+weapon_damaged_collection_sound = functions.get_sound('audio/weapon_damaged.wav')
+coin_collection_sound = functions.get_sound('audio/coin.wav')
+laser_collection_sound = functions.get_sound('audio/laser.wav')
+sounds = [bullet_sound, explosion_sound, shield_broke_sound, collectable_collection_sound, laser_beam_sound, cow_sound,
+          fail_sound, promotion_sound, top_score_sound, promotion_and_score_sound, menu_sound, accept_sound,
+          big_explosion_sound, shield_collection_sound, immunity_collection_sound, laser_collection_sound,
+          angry_mode_collection_sound, weapon_damaged_collection_sound, coin_collection_sound]
 
 #  open file responsible for storing the progress
 #  and load the data
@@ -581,7 +588,7 @@ class GameScene(Scene):
                                            GameScene.player.rect.y, 5))
                         elif event.key == controls[5]:  # shoot laser
                             if GameScene.player.has_laser:
-                                laser_sound.play()  # laser sound effect
+                                laser_beam_sound.play()  # laser sound effect
                                 GameScene.player.has_laser = False
                                 GameScene.start_time = functions.get_current_time()
                                 GameScene.laser.update()
@@ -1620,9 +1627,9 @@ def game_restart():
     pygame.time.set_timer(GameScene.COLLECTABLE_AMMO_RESPAWN, random.randint(25000, 35000))
     pygame.time.set_timer(GameScene.COLLECTABLE_SHIELD_RESPAWN, random.randint(60000, 80000))
     pygame.time.set_timer(GameScene.COLLECTABLE_LASER_RESPAWN, random.randint(90000, 110000))
-    #pygame.time.set_timer(GameScene.COLLECTABLE_IMMUNITY_RESPAWN, random.randint(100000, 130000))
-    #pygame.time.set_timer(GameScene.COLLECTABLE_ANGRY_RESPAWN, random.randint(50000, 100000))
-    #pygame.time.set_timer(GameScene.COLLECTABLE_WEAPON_DAMAGED, random.randint(70000, 120000))
+    # pygame.time.set_timer(GameScene.COLLECTABLE_IMMUNITY_RESPAWN, random.randint(100000, 130000))
+    # pygame.time.set_timer(GameScene.COLLECTABLE_ANGRY_RESPAWN, random.randint(50000, 100000))
+    # pygame.time.set_timer(GameScene.COLLECTABLE_WEAPON_DAMAGED, random.randint(70000, 120000))
     functions.load_music('audio/soundtrack.mp3')
     pygame.mixer.music.play(-1)
     GameScene.game_is_active = True
@@ -1661,15 +1668,39 @@ def game_restart():
                      functions.get_image('img/big_alien_explosion5.png').convert_alpha()], 300, 200, 0, 3))
     for i in range(10):
         GameScene.collectables.add(Collectable([functions.get_image('img/coin0.png').convert_alpha(),
-                                     functions.get_image('img/coin1.png').convert_alpha(),
-                                     functions.get_image('img/coin2.png').convert_alpha(),
-                                     functions.get_image('img/coin3.png').convert_alpha(),
-                                     functions.get_image('img/coin4.png').convert_alpha(),
-                                     functions.get_image('img/coin5.png').convert_alpha(),
-                                     functions.get_image('img/coin6.png').convert_alpha(),
-                                     functions.get_image('img/coin7.png').convert_alpha()],
-                                    random.randint(0, 734),
-                                    100, 0, "coin"))
+                                                functions.get_image('img/coin1.png').convert_alpha(),
+                                                functions.get_image('img/coin2.png').convert_alpha(),
+                                                functions.get_image('img/coin3.png').convert_alpha(),
+                                                functions.get_image('img/coin4.png').convert_alpha(),
+                                                functions.get_image('img/coin5.png').convert_alpha(),
+                                                functions.get_image('img/coin6.png').convert_alpha(),
+                                                functions.get_image('img/coin7.png').convert_alpha()],
+                                               random.randint(0, 734),
+                                               100, 0, "coin"))
+    GameScene.collectables.add(
+        Collectable([functions.get_image('img/bullet2.png').convert_alpha()],
+                    random.randint(0, 736),
+                    -100, 2, "ammo"))
+    GameScene.collectables.add(
+        Collectable([functions.get_image('img/shield.png').convert_alpha()],
+                    random.randint(0, 736),
+                    -100, 2, "shield"))
+    GameScene.collectables.add(
+        Collectable([functions.get_image('img/laser_gun.png').convert_alpha()],
+                    random.randint(0, 736),
+                    -100, 2, "laser"))
+    GameScene.collectables.add(
+        Collectable([functions.get_image('img/immune.png').convert_alpha()],
+                    random.randint(0, 736),
+                    -100, 2, "immunity"))
+    GameScene.collectables.add(
+        Collectable([functions.get_image('img/angry_mode.png').convert_alpha()],
+                    random.randint(0, 736),
+                    -100, 2, "angry_mode"))
+    GameScene.collectables.add(
+        Collectable([functions.get_image('img/weapon_damaged.png').convert_alpha()],
+                    random.randint(0, 736),
+                    -100, 2, "weapon_damaged"))
 
 
 def get_ready():  # count 3 seconds before resuming the game, blit the counter
@@ -1765,7 +1796,7 @@ def check_if_collectable_collide():
                                                                True,
                                                                pygame.sprite.collide_mask)
     if collectable_player_collision:
-        collectable_sound.play()
+        collectable_collection_sound.play()
         for item in collectable_player_collision:
             if item.category == "ammo":  # get 1 ammo, you can shoot with ammo
                 GameScene.player.num_of_bullets += 1
@@ -1773,26 +1804,32 @@ def check_if_collectable_collide():
                 GameScene.player.has_shield = True
                 if GameScene.player.num_of_shields < 4:
                     GameScene.player.num_of_shields += 1
+                    shield_collection_sound.play()
             elif item.category == "laser":  # get 1 laser, it destroys aliens in front of you
                 GameScene.player.has_laser = True
+                laser_collection_sound.play()
             elif item.category == "immunity":  # get immunity, you don't take damage for x seconds
                 GameScene.player.is_immune = True
                 GameScene.start_time_immunity = functions.get_current_time()
+                immunity_collection_sound.play()
             elif item.category == "angry_mode":  # activate angry mode, all aliens move faster
                 Alien.angry_mode = True
                 GameScene.start_time_angry_mode = functions.get_current_time()
+                angry_mode_collection_sound.play()
             elif item.category == "weapon_damaged":
                 GameScene.player.weapon_damaged = True
                 GameScene.start_time_weapon_damaged = functions.get_current_time()
+                weapon_damaged_collection_sound.play()
             elif item.category == "coin":
                 global current_coins
                 current_coins += 1
+                coin_collection_sound.play()
 
 
 def show_collectables():
     if GameScene.player.has_shield:
         for i in range(GameScene.player.num_of_shields):
-            frame.blit(functions.get_image('img/shield.png'), (34*i+10, 45))
+            frame.blit(functions.get_image('img/shield.png'), (34 * i + 10, 45))
     if GameScene.player.has_laser:
         frame.blit(functions.get_image('img/laser_gun.png'), (frame_rect.right - 95, 45))
     if GameScene.player.weapon_damaged:
@@ -1803,4 +1840,4 @@ def show_collectables():
         frame.blit(functions.get_image('img/angry_mode.png'), (frame_rect.right - 45, 90))
     if current_coins > 0:
         for i in range(current_coins):
-            frame.blit(functions.get_image('img/coin3.png'), (28*i+90, 7))
+            frame.blit(functions.get_image('img/coin3.png'), (28 * i + 90, 7))
