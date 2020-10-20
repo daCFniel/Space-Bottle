@@ -797,7 +797,7 @@ class GameOptionsScene(Scene):
 
         # buttons objects
         self.button1 = gui_elements.Button(0, 40, 160, 40, WHITE, self.golden, "Audio", True)
-        self.button2 = gui_elements.Button(0, 120, 160, 40, WHITE, self.green, "Controls", True)
+        self.button2 = gui_elements.Button(0, 120, 160, 40, WHITE, self.green, "Info", True)
         self.button3 = gui_elements.Button(0, 200, 160, 40, WHITE, self.blue, "Restart", True)
         self.button4 = gui_elements.Button(0, 280, 160, 40, WHITE, (52, 45, 79), "Main Menu", True)
         self.buttons = [self.button1, self.button2, self.button3, self.button4]
@@ -824,7 +824,8 @@ class GameOptionsScene(Scene):
             self.switch_to_scene(GameOptionsAudioScene())
 
         def button2_action():
-            self.switch_to_scene(GameOptionsControlsScene())
+            pygame.time.wait(150)
+            self.switch_to_scene(GameOptionsInfoScene())
 
         def button3_action():
             game_erase()
@@ -858,7 +859,7 @@ class GameOptionsScene(Scene):
             button.write(self.menu, self.menu_font)
 
 
-class GameOptionsControlsScene(Scene):
+class GameOptionsInfoControlsScene(Scene):
     def __init__(self):
         super().__init__()
         if current_controls == 0:
@@ -871,13 +872,69 @@ class GameOptionsControlsScene(Scene):
     def event_handling(self, events):
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.switch_to_scene(GameOptionsScene())
+                self.switch_to_scene(GameOptionsInfoScene())
 
     def update(self, pressed_keys):
         pass
 
     def render(self):
         frame.blit(self.background, self.rect)
+
+
+class GameOptionsInfoSheetScene(Scene):
+    def __init__(self):
+        super().__init__()
+        self.background = functions.get_image('img/sheet.png').convert_alpha()
+        self.rect = self.background.get_rect()  # rect of the menu (size + x,y)
+        self.rect.center = frame_rect.center  # rect but centered in the frame (size + x,y(centered))
+
+    def event_handling(self, events):
+        for event in events:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.switch_to_scene(GameOptionsInfoScene())
+
+    def update(self, pressed_keys):
+        pass
+
+    def render(self):
+        frame.blit(self.background, self.rect)
+
+
+class GameOptionsInfoScene(GameOptionsScene):
+    def __init__(self):
+        super().__init__()
+        self.button1.text = "Controls"
+        self.button2.text = "Cheat Sheet"
+        self.buttons = [self.button1, self.button2]
+
+    def event_handling(self, events):
+        for event in events:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.switch_to_scene(GameOptionsScene())
+
+    def update(self, pressed_keys):
+        # Button action
+        def button1_action():
+            self.switch_to_scene(GameOptionsInfoControlsScene())
+
+        def button2_action():
+            self.switch_to_scene(GameOptionsInfoSheetScene())
+
+        self.button1.on_click_action(lambda: button1_action())
+        self.button2.on_click_action(lambda: button2_action())
+
+    def render(self):
+        # menu surface
+        frame.blit(functions.get_image('img/background1.png').convert(), (0, 0))
+        frame.blit(self.menu, self.rect)
+        # game paused text
+        self.game_paused_text.write(frame)
+        # Button draw with mouse hover effect
+        # Button text
+        for button in self.buttons:
+            button.draw(self.menu)
+            button.draw_border(self.menu, BLACK)
+            button.write(self.menu, self.menu_font)
 
 
 class MenuCreditsScene(Scene):
@@ -1429,7 +1486,8 @@ class GameFailScene(Scene):
         self.top_score_text = gui_elements.Text("NEW TOP SCORE", BLUE, self.game_over_font)
         self.top_score_text.rect.midbottom = frame_rect.midbottom
         self.top_score_text.rect.y -= 100
-        self.coins_collected_text = gui_elements.Text(str(current_coins)+" Coins Collected", WHITE, self.try_again_font)
+        self.coins_collected_text = gui_elements.Text(str(current_coins) + " Coins Collected", WHITE,
+                                                      self.try_again_font)
         self.coins_collected_text.rect.midbottom = frame_rect.midbottom
         self.texts = [self.game_over_text]
         # Button
@@ -1541,7 +1599,6 @@ def update_total_coins():
         total_coins += current_coins
         save_data()
         return True
-
 
 
 # save all data to the file, save/backup progress
