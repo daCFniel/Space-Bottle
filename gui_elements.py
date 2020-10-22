@@ -7,8 +7,18 @@ class Button:
         self.text = text
         self.text_color = text_color
         self.background_color = background_color
+        r = 50
+        g = 50
+        b = 50
+        if self.background_color[0] + 50 > 255:
+            r = 255 - self.background_color[0]
+        if self.background_color[1] + 50 > 255:
+            g = 255 - self.background_color[1]
+        if self.background_color[2] + 50 > 255:
+            b = 255 - self.background_color[2]
         self.background_color_bright = (
-            self.background_color[0] + 50, self.background_color[1] + 50, self.background_color[2] + 50)
+            self.background_color[0] + r, self.background_color[1] + g, self.background_color[2] + b)
+        # prevent rgb values going higher than 255 as it is error
         self.is_custom_surface = is_custom_surface
         self.border_thic = border_thic
 

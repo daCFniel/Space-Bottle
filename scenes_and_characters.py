@@ -12,9 +12,12 @@ RED = (255, 0, 0)
 GREY = (70, 70, 70)
 ORANGE = (255, 117, 26)
 BLUE = (54, 191, 191)
+OCEAN = (58, 127, 160)
 PURPLE = (24, 32, 43)
 TOMATO = (255, 99, 71)
-GOLD = (255,215,0)
+GOLD = (255, 215, 0)
+DARKBLUE = (0, 0, 255)
+MAGENTA = (255, 0, 255)
 
 # Global variables
 frame = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -48,10 +51,11 @@ angry_mode_collection_sound = functions.get_sound('audio/angry_mode.wav')
 weapon_damaged_collection_sound = functions.get_sound('audio/weapon_damaged.wav')
 coin_collection_sound = functions.get_sound('audio/coin.wav')
 laser_collection_sound = functions.get_sound('audio/laser.wav')
+purchase_sound = functions.get_sound('audio/purchase.wav')
 sounds = [bullet_sound, explosion_sound, shield_broke_sound, collectable_collection_sound, laser_beam_sound, cow_sound,
           fail_sound, promotion_sound, top_score_sound, promotion_and_score_sound, menu_sound, accept_sound,
           big_explosion_sound, shield_collection_sound, immunity_collection_sound, laser_collection_sound,
-          angry_mode_collection_sound, weapon_damaged_collection_sound, coin_collection_sound]
+          angry_mode_collection_sound, weapon_damaged_collection_sound, coin_collection_sound, purchase_sound]
 
 #  open file responsible for storing the progress
 #  and load the data
@@ -76,6 +80,8 @@ sounds_volume = int(data[5])  # default value 40
 display_mode = int(data[6])  # Integer 0 or 1 where 0 - window; 1 - fullscreen
 # total current coins
 total_coins = int(data[7])
+# skins owned
+skins_owned = [int(x) for x in data[8]]  # list comprehension
 
 # exp required for next promotion based on current rank (math module used to make the numbers nonlinear)
 exp_required_total = int(999 * math.sqrt(math.pow(2, current_rank)))
@@ -444,6 +450,14 @@ class Collectable(Character):
     def check_boundaries(self):
         if self.rect.top > HEIGHT:
             self.kill()
+
+
+class Skin:
+    def __init__(self, image, name, cost):
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.name = name
+        self.cost = cost
 
 
 class Scene:
@@ -1105,16 +1119,18 @@ class MenuScene(Scene):
         self.button2 = gui_elements.Button(0, 290, 160, 40, WHITE, BLACK, "Settings")
         self.button3 = gui_elements.Button(0, 370, 160, 40, WHITE, BLACK, "Credits")
         self.button4 = gui_elements.Button(0, 450, 160, 40, WHITE, BLACK, "Quit")
-        self.buttons = [self.button1, self.button2, self.button3, self.button4]
+        self.shop_button = gui_elements.Button(0, 0, 120, 40, WHITE, OCEAN, "Shop", False, 3)
+        self.buttons = [self.button1, self.button2, self.button3, self.button4, self.shop_button]
         self.button1.rect.centerx = frame_rect.centerx  # center buttons horizontally in the menu
         self.button2.rect.centerx = frame_rect.centerx
         self.button3.rect.centerx = frame_rect.centerx
         self.button4.rect.centerx = frame_rect.centerx
+        self.shop_button.rect.topright = frame_rect.topright
         # back button
         self.back_button_font = functions.get_font('fonts/Space_Galaxy.ttf', 40)
         self.back_button = gui_elements.Button(0, 0, 80, 40, WHITE, BLACK, "Back")
-        self.back_button.rect.bottomleft = frame_rect.bottomleft
 
+        self.back_button.rect.bottomleft = frame_rect.bottomleft
         # rank img
         self.rank_img = get_current_rank()
         self.rank_img_rect = self.rank_img.get_rect()
@@ -1150,10 +1166,14 @@ class MenuScene(Scene):
         def button4_action():
             self.terminate()
 
+        def shop_button_action():
+            self.switch_to_scene(MenuShopScene())
+
         self.button1.on_click_action(lambda: button1_action())
         self.button2.on_click_action(lambda: button2_action())
         self.button3.on_click_action(lambda: button3_action())
         self.button4.on_click_action(lambda: button4_action())
+        self.shop_button.on_click_action(lambda: shop_button_action())
 
     def render(self):
         # menu background and logo
@@ -1169,6 +1189,136 @@ class MenuScene(Scene):
         for button in self.buttons:
             button.draw(frame)
             button.write(frame, self.menu_font)
+        self.shop_button.draw_border(frame, (138, 197, 230))
+
+
+class MenuShopScene(MenuScene):
+    def __init__(self):
+        super().__init__()
+        # Font
+        self.font_big = functions.get_font('fonts/Space_Galaxy.ttf', 80)
+        self.font_medium = functions.get_font('fonts/Space_Galaxy.ttf', 30)
+        # Text
+        self.text = gui_elements.Text("Shop", WHITE, self.font_big)
+        self.text.rect.midtop = frame_rect.midtop
+        self.text.rect.y += 40
+        # Back button
+        self.back_button.rect.topleft = frame_rect.topleft
+        # Skins
+        self.common_skin = Skin(functions.get_image('img/spaceship.png'), "Rocket Alpha", 0)
+        self.rare_skin = Skin(functions.get_image('img/spaceship2.png'), "Falcon 68", 3)
+        self.epic_skin = Skin(functions.get_image('img/spaceship3.png'), "Force QPA", 6)
+        self.legendary_skin = Skin(functions.get_image('img/spaceship4.png'), "Galaxy Warship Prime", 10)
+        self.skins = [self.common_skin, self.rare_skin, self.epic_skin, self.legendary_skin]
+        self.common_skin.rect.midleft = frame_rect.midleft
+        self.rare_skin.rect.midleft = frame_rect.midleft
+        self.epic_skin.rect.midleft = frame_rect.midleft
+        self.legendary_skin.rect.midleft = frame_rect.midleft
+        self.common_skin.rect.x += 100
+        self.rare_skin.rect.x += 260
+        self.epic_skin.rect.x += 410
+        self.legendary_skin.rect.x += 610
+        # Skin names
+        self.common_skin_name = gui_elements.Text(self.common_skin.name, WHITE, self.font_medium)
+        self.rare_skin_name = gui_elements.Text(self.rare_skin.name, WHITE, self.font_medium)
+        self.epic_skin_name = gui_elements.Text(self.epic_skin.name, WHITE, self.font_medium)
+        self.legendary_skin_name = gui_elements.Text(self.legendary_skin.name, WHITE, self.font_medium)
+        self.common_skin_name.rect = (65, 230)
+        self.rare_skin_name.rect = (240, 230)
+        self.epic_skin_name.rect = (385, 230)
+        self.legendary_skin_name.rect = (535, 230)
+        self.skin_names = [self.common_skin_name, self.rare_skin_name, self.epic_skin_name, self.legendary_skin_name]
+        # Skin costs
+        if skins_owned[0] == 0:
+            rare_cost = str(self.rare_skin.cost) + " Coins"
+        else:
+            rare_cost = "Owned"
+        if skins_owned[1] == 0:
+            epic_cost = str(self.epic_skin.cost) + " Coins"
+        else:
+            epic_cost = "Owned"
+        if skins_owned[2] == 0:
+            legendary_cost = str(self.legendary_skin.cost) + " Coins"
+        else:
+            legendary_cost = "Owned"
+        self.common_skin_cost = gui_elements.Button(85, 340, 100, 50, WHITE, BLACK, "Default")
+        self.rare_skin_cost = gui_elements.Button(245, 340, 100, 50, DARKBLUE, BLACK, rare_cost)
+        self.epic_skin_cost = gui_elements.Button(395, 340, 100, 50, MAGENTA, BLACK, epic_cost)
+        self.legendary_skin_cost = gui_elements.Button(595, 340, 100, 50, GOLD, BLACK,
+                                                       legendary_cost)
+        self.skin_costs = [self.common_skin_cost, self.rare_skin_cost, self.epic_skin_cost, self.legendary_skin_cost]
+
+    def event_handling(self, events):
+        for event in events:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.switch_to_scene(MenuScene())
+
+    def update(self, pressed_keys):
+        def button1_action():
+            pass
+
+        def button2_action():
+            global total_coins
+            #  If you have enough coins and you don't own the skin already
+            if total_coins >= self.rare_skin.cost and skins_owned[0] == 0:
+                purchase_sound.play()
+                total_coins -= self.rare_skin.cost
+                skins_owned[0] = 1
+                save_data()
+                pygame.time.wait(300)
+                self.switch_to_scene(MenuShopScene())
+
+        def button3_action():
+            global total_coins
+            if total_coins >= self.epic_skin.cost and skins_owned[1] == 0:
+                purchase_sound.play()
+                total_coins -= self.epic_skin.cost
+                skins_owned[1] = 1
+                save_data()
+                pygame.time.wait(300)
+                self.switch_to_scene(MenuShopScene())
+
+        def button4_action():
+            global total_coins
+            if total_coins >= self.legendary_skin.cost and skins_owned[2] == 0:
+                purchase_sound.play()
+                total_coins -= self.legendary_skin.cost
+                skins_owned[2] = 1
+                save_data()
+                pygame.time.wait(300)
+                self.switch_to_scene(MenuShopScene())
+
+        self.common_skin_cost.on_click_action(lambda: button1_action())
+        self.rare_skin_cost.on_click_action(lambda: button2_action())
+        self.epic_skin_cost.on_click_action(lambda: button3_action())
+        self.legendary_skin_cost.on_click_action(lambda: button4_action())
+
+        def back_button_action():
+            self.switch_to_scene(MenuScene())
+
+        self.back_button.on_click_action(lambda: back_button_action())
+
+    def render(self):
+        # menu background
+        frame.blit(self.background_img, (0, 0))
+        # coins preview
+        self.coins_text.write(frame)
+        frame.blit(self.coin_img, self.coin_img_rect)
+        # write header text
+        self.text.write(frame)
+        # back button
+        self.back_button.draw(frame)
+        self.back_button.write(frame, self.back_button_font)
+        # skins
+        for skin in self.skins:
+            frame.blit(skin.image, skin.rect)
+        # skin names
+        for name in self.skin_names:
+            name.write(frame)
+        # skin costs
+        for cost in self.skin_costs:
+            cost.draw(frame)
+            cost.write(frame, self.font_medium)
 
 
 class MenuSettingsScene(MenuScene):
@@ -1523,12 +1673,9 @@ class GameFailScene(Scene):
         self.button2.rect.bottomright = frame_rect.bottomright
         self.buttons = [self.button, self.button2]
 
-        #got_top_score = update_top_score()  # update the top score if player hits the new record
-        #got_promoted = check_if_promotion()  # add exp and check if player is eligible for promotion
-        #got_coins = update_total_coins()  # add coins collected in this game to the total amount of coins
-        got_top_score = True
-        got_promoted = True
-        got_coins = True
+        got_top_score = update_top_score()  # update the top score if player hits the new record
+        got_promoted = check_if_promotion()  # add exp and check if player is eligible for promotion
+        got_coins = update_total_coins()  # add coins collected in this game to the total amount of coins
 
         # play sound according to player results and write appropriate text
         if got_top_score and got_promoted:
@@ -1636,7 +1783,8 @@ def update_total_coins():
 def save_data():
     global data, file
     data = [str(current_rank) + '\n', str(top_score) + '\n', str(current_exp) + '\n', str(current_controls) + '\n',
-            str(music_volume) + '\n', str(sounds_volume) + '\n', str(display_mode) + '\n', str(total_coins) + '\n']
+            str(music_volume) + '\n', str(sounds_volume) + '\n', str(display_mode) + '\n', str(total_coins) + '\n',
+            "".join([str(x) for x in skins_owned])]
     # write everything
     with open('fonts/font_size.txt', 'w') as file:
         file.writelines(data)
