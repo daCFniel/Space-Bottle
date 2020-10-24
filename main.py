@@ -52,8 +52,8 @@ def start_game(fps, starting_scene):
 
 
 # make the frame stay until pressing quit
-'''We put exit() after pygame.quit(), because pygame.quit() 
-makes the system exit and exit() closes that window.'''
+# We put exit() after pygame.quit(), because pygame.quit()
+# makes the system exit and exit() closes that window.
 start_game(FPS, scenes_and_characters.MenuScene())
 pygame.quit()
 exit()

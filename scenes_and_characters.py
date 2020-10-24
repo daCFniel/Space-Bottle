@@ -12,24 +12,30 @@ RED = (255, 0, 0)
 GREY = (70, 70, 70)
 ORANGE = (255, 117, 26)
 BLUE = (54, 191, 191)
+OCEAN = (58, 127, 160)
 PURPLE = (24, 32, 43)
+TOMATO = (255, 99, 71)
+GOLD = (255, 215, 0)
+DARKBLUE = (0, 0, 255)
+MAGENTA = (255, 0, 255)
 
 # Global variables
 frame = pygame.display.set_mode((WIDTH, HEIGHT))
 frame_rect = frame.get_rect()
 current_score = 0
+current_coins = 0
 map_score = 0
 alien_default_speed = 3
 immunity_time = 10
-pause_time = 3
 angry_mode_time = 10
+weapon_damaged_time = 15
+pause_time = 3
 
 # audio
-bullet_sound = functions.get_sound('audio/laser.wav')
+bullet_sound = functions.get_sound('audio/bullet.wav')
 explosion_sound = functions.get_sound('audio/explosion.wav')
 shield_broke_sound = functions.get_sound('audio/shield_broke.wav')
-collectable_sound = functions.get_sound('audio/score.wav')
-laser_sound = functions.get_sound('audio/laser_beam.wav')
+laser_beam_sound = functions.get_sound('audio/laser_beam.wav')
 cow_sound = functions.get_sound('audio/cow.wav')
 fail_sound = functions.get_sound('audio/fail.wav')
 promotion_sound = functions.get_sound('audio/promotion.wav')
@@ -38,9 +44,20 @@ promotion_and_score_sound = functions.get_sound('audio/promotion_and_score.wav')
 menu_sound = functions.get_sound('audio/entering_menu.wav')
 accept_sound = functions.get_sound('audio/accept.wav')
 big_explosion_sound = functions.get_sound('audio/big_explosion.wav')
-sounds = [bullet_sound, explosion_sound, shield_broke_sound, collectable_sound, laser_sound, cow_sound, fail_sound,
-          promotion_sound, top_score_sound, promotion_and_score_sound,
-          menu_sound, accept_sound, big_explosion_sound]
+collectable_collection_sound = functions.get_sound('audio/score.wav')
+shield_collection_sound = functions.get_sound('audio/shield.wav')
+immunity_collection_sound = functions.get_sound('audio/immunity.wav')
+angry_mode_collection_sound = functions.get_sound('audio/angry_mode.wav')
+weapon_damaged_collection_sound = functions.get_sound('audio/weapon_damaged.wav')
+coin_collection_sound = functions.get_sound('audio/coin.wav')
+laser_collection_sound = functions.get_sound('audio/laser.wav')
+purchase_sound = functions.get_sound('audio/purchase.wav')
+equip_sound = functions.get_sound('audio/equip.wav')
+sounds = [bullet_sound, explosion_sound, shield_broke_sound, collectable_collection_sound, laser_beam_sound, cow_sound,
+          fail_sound, promotion_sound, top_score_sound, promotion_and_score_sound, menu_sound, accept_sound,
+          big_explosion_sound, shield_collection_sound, immunity_collection_sound, laser_collection_sound,
+          angry_mode_collection_sound, weapon_damaged_collection_sound, coin_collection_sound, purchase_sound,
+          equip_sound]
 
 #  open file responsible for storing the progress
 #  and load the data
@@ -63,6 +80,12 @@ music_volume = int(data[4])  # default value 50
 sounds_volume = int(data[5])  # default value 40
 # current display mode
 display_mode = int(data[6])  # Integer 0 or 1 where 0 - window; 1 - fullscreen
+# total current coins
+total_coins = int(data[7])
+# current skin
+current_skin = int(data[8])  # 1 - 4:  1-default; 2-rare; 3-epic; 4-legendary
+# skins owned
+skins_owned = [int(x) for x in data[9]]  # list comprehension
 
 # exp required for next promotion based on current rank (math module used to make the numbers nonlinear)
 exp_required_total = int(999 * math.sqrt(math.pow(2, current_rank)))
@@ -94,28 +117,22 @@ class Character(pygame.sprite.Sprite):
 
 # sub classes
 class Player(Character):
-
     # constructor
     def __init__(self, image, x, y, speed):
         super().__init__(image, x, y, speed)
         self.has_shield = False
         self.has_laser = False
         self.is_immune = False
+        self.weapon_damaged = False
         self.num_of_bullets = 3
-        self.images = []
-        self.images.append(self.image[0])
-        self.images.append(functions.get_image('img/spaceship_l2.png').convert_alpha())
-        self.images.append(functions.get_image('img/spaceship_r2.png').convert_alpha())
-        self.images.append(functions.get_image('img/shielded_spaceship.png').convert_alpha())
-        self.images.append(functions.get_image('img/shielded_spaceship_l2.png').convert_alpha())
-        self.images.append(functions.get_image('img/shielded_spaceship_r2.png').convert_alpha())
-        self.images.append(functions.get_image('img/jet.png').convert_alpha())
-        self.images.append(functions.get_image('img/immune_small.png').convert_alpha())
-        self.images.append(functions.get_image('img/jet_left.png').convert_alpha())
-        self.images.append(functions.get_image('img/jet_right.png').convert_alpha())
-        self.images.append(functions.get_image('img/parachute.png').convert_alpha())
-        self.images.append(functions.get_image('img/wind.png').convert_alpha())
-        self.images.append(functions.get_image('img/wind2.png').convert_alpha())
+        self.num_of_shields = 0
+        self.image.append(functions.get_image('img/jet.png').convert_alpha())
+        self.image.append(functions.get_image('img/immune_small.png').convert_alpha())
+        self.image.append(functions.get_image('img/jet_left.png').convert_alpha())
+        self.image.append(functions.get_image('img/jet_right.png').convert_alpha())
+        self.image.append(functions.get_image('img/parachute.png').convert_alpha())
+        self.image.append(functions.get_image('img/wind.png').convert_alpha())
+        self.image.append(functions.get_image('img/wind2.png').convert_alpha())
 
     def check_boundaries(self):
         if self.rect.left < -self.rect.width / 2:  # check if character hits the boundaries
@@ -129,27 +146,31 @@ class Player(Character):
 
     # methods
     def draw(self, key):
+        # when player presses all the buttons at once
         if key[controls[1]] and key[controls[3]] and (key[controls[0]] or key[controls[2]]):
-            frame.blit(self.images[0], self.rect)  # when player presses all the buttons at once
+            if self.has_shield:
+                frame.blit(self.image[3], self.rect)
+            else:
+                frame.blit(self.image[0], self.rect)
         else:
             if key[controls[1]]:
                 if self.has_shield:
-                    frame.blit(self.images[4], self.rect)
+                    frame.blit(self.image[4], self.rect)
                 else:
-                    frame.blit(self.images[1], self.rect)
+                    frame.blit(self.image[1], self.rect)
             elif key[controls[3]]:
                 if self.has_shield:
-                    frame.blit(self.images[5], self.rect)
+                    frame.blit(self.image[5], self.rect)
                 else:
-                    frame.blit(self.images[2], self.rect)
+                    frame.blit(self.image[2], self.rect)
             else:
                 if self.has_shield:
-                    frame.blit(self.images[3], self.rect)
+                    frame.blit(self.image[3], self.rect)
                 else:
-                    frame.blit(self.images[0], self.rect)
+                    frame.blit(self.image[0], self.rect)
             # show that player is immune
         if self.is_immune:
-            frame.blit(self.images[7], (self.rect.centerx - 12, self.rect.bottom))
+            frame.blit(self.image[7], (self.rect.centerx - 12, self.rect.bottom))
 
     def update(self, key):
         shift_pressed = key[controls[6]] or key[pygame.K_RSHIFT]
@@ -157,33 +178,33 @@ class Player(Character):
             if shift_pressed:
                 self.rect.move_ip(0, -self.speed)
                 if not key[controls[1]] and not key[controls[3]] and not key[controls[2]]:
-                    frame.blit(self.images[6], self.rect.bottomleft)
-                    frame.blit(self.images[6], self.rect.midbottom)
+                    frame.blit(self.image[6], self.rect.bottomleft)
+                    frame.blit(self.image[6], self.rect.midbottom)
                 elif key[controls[1]] and not key[controls[3]] and not key[controls[2]]:
-                    frame.blit(self.images[8], (self.rect.centerx + 3, self.rect.centery + 20))
+                    frame.blit(self.image[8], (self.rect.centerx + 3, self.rect.centery + 20))
                 elif key[controls[3]] and not key[controls[1]] and not key[controls[2]]:
-                    frame.blit(self.images[9], (self.rect.centerx - 35, self.rect.centery + 19))
+                    frame.blit(self.image[9], (self.rect.centerx - 35, self.rect.centery + 19))
             else:
                 self.rect.move_ip(0, -self.speed + 1)
         if key[controls[2]]:  # back
             if shift_pressed:
                 self.rect.move_ip(0, self.speed)
                 if not key[controls[0]]:
-                    frame.blit(self.images[10], (self.rect.left, self.rect.bottom - 20))
+                    frame.blit(self.image[10], (self.rect.left, self.rect.bottom - 20))
             else:
                 self.rect.move_ip(0, self.speed - 1)
         if key[controls[1]]:  # left
             if shift_pressed:
                 self.rect.move_ip(-self.speed, 0)
                 if not key[controls[3]] and not key[controls[0]] and not key[controls[2]]:
-                    frame.blit(self.images[11], (self.rect.centerx + 15, self.rect.centery - 20))
+                    frame.blit(self.image[11], (self.rect.centerx + 15, self.rect.centery - 20))
             else:
                 self.rect.move_ip(-self.speed + 1, 0)
         if key[controls[3]]:  # right
             if shift_pressed:
                 self.rect.move_ip(self.speed, 0)
                 if not key[controls[1]] and not key[controls[0]] and not key[controls[2]]:
-                    frame.blit(self.images[12], (self.rect.centerx - 50, self.rect.centery - 20))
+                    frame.blit(self.image[12], (self.rect.centerx - 50, self.rect.centery - 20))
             else:
                 self.rect.move_ip(self.speed - 1, 0)
 
@@ -197,6 +218,8 @@ class Alien(Character):
         super().__init__(image, x, y, speed)
         self.level = 1
         self.health = health
+        self.animation_count = 0
+        self.drop_chance = 1
 
     # methods
     def draw(self):
@@ -209,7 +232,15 @@ class Alien(Character):
             self.rect.move_ip(0, self.speed)
         # check if alien's health reaches 0, if so - kill it
         if self.health == 0:
-            self.kill()
+            # galactic dust animation upon death
+            # animation speed - x(here 4) * number of images (here 4) + x(here 4) = 20
+            # too speed up animation make x lower, to slow down animation, make x larger
+            self.image[0] = self.image[self.animation_count // 4]
+            if self.animation_count + 1 < 20:
+                self.animation_count += 1
+            else:
+                self.drop_collectable(self.drop_chance)
+                self.kill()
 
     def action(self):
         pass
@@ -221,17 +252,64 @@ class Alien(Character):
             current_score += 1
             map_score += 1
 
+    # Param drop_chance: chance (0-100%) that alien will drop collectable upon death
+    def drop_collectable(self, drop_chance):
+        collectable_drop = random.randint(0, 100)
+        if collectable_drop <= drop_chance:
+            collectable_type_drop = random.randint(0, 100)
+            position_fix = 15  # so the collectable appears in the middle of destroyed alien
+            if self.level == 4:  # for big alien
+                position_fix = 110
+            if collectable_type_drop <= 55:  # 55% chance that dropped collectable will be ammo
+                GameScene.collectables.add(Collectable([functions.get_image('img/bullet2.png').convert_alpha()],
+                                                       self.rect.x + position_fix,
+                                                       self.rect.y, 2, "ammo"))
+            elif 55 < collectable_type_drop <= 65:  # 10% chance that dropped collectable will be shield
+                GameScene.collectables.add(
+                    Collectable([functions.get_image('img/shield.png').convert_alpha()],
+                                self.rect.x + position_fix,
+                                self.rect.y, 2, "shield"))
+            elif 65 < collectable_type_drop <= 75:  # 10% chance that dropped collectable will be laser
+                GameScene.collectables.add(
+                    Collectable([functions.get_image('img/laser_gun.png').convert_alpha()],
+                                self.rect.x + position_fix,
+                                self.rect.y, 2, "laser"))
+            elif 75 < collectable_type_drop <= 85:  # 10% chance that dropped collectable will be immunity
+                GameScene.collectables.add(
+                    Collectable([functions.get_image('img/immune.png').convert_alpha()],
+                                self.rect.x + position_fix,
+                                self.rect.y, 2, "immunity"))
+            elif 85 < collectable_type_drop <= 95:  # 9% chance that dropped collectable will be angry mode
+                GameScene.collectables.add(
+                    Collectable([functions.get_image('img/angry_mode.png').convert_alpha()],
+                                self.rect.x + position_fix,
+                                self.rect.y, 2, "angry_mode"))
+            elif 95 < collectable_type_drop <= 100:  # 5% chance that dropped collectable will be coin
+                GameScene.collectables.add(
+                    Collectable([functions.get_image('img/coin0.png').convert_alpha(),
+                                 functions.get_image('img/coin1.png').convert_alpha(),
+                                 functions.get_image('img/coin2.png').convert_alpha(),
+                                 functions.get_image('img/coin3.png').convert_alpha(),
+                                 functions.get_image('img/coin4.png').convert_alpha(),
+                                 functions.get_image('img/coin5.png').convert_alpha(),
+                                 functions.get_image('img/coin6.png').convert_alpha(),
+                                 functions.get_image('img/coin7.png').convert_alpha()],
+                                self.rect.x + position_fix,
+                                self.rect.y, 1, "coin"))
+
 
 class AlienLevel2(Alien):
     def __init__(self, image, x, y, speed, health):
         super().__init__(image, x, y, speed, health)
         self.level = 2
+        self.drop_chance = 30
 
 
 class AlienLevel3(Alien):
     def __init__(self, image, x, y, speed, health):
         super().__init__(image, x, y, speed, health)
         self.level = 3
+        self.drop_chance = 60
 
     def draw(self):
         if self.health == 1:
@@ -245,7 +323,12 @@ class AlienLevel3(Alien):
             self.rect.move_ip(self.speed, 1)
         # check if alien's health reaches 0, if so - kill it
         if self.health == 0:
-            self.kill()
+            self.image[0] = self.image[(self.animation_count // 5) + 1]
+            if self.animation_count + 1 < 25:
+                self.animation_count += 1
+            else:
+                self.drop_collectable(self.drop_chance)
+                self.kill()
 
     def action(self):
         if random.randint(0, 200) == 0:
@@ -266,6 +349,7 @@ class AlienLevel4(Alien):
     def __init__(self, image, x, y, speed, health):
         super().__init__(image, x, y, speed, health)
         self.level = 4
+        self.drop_chance = 90
 
     def draw(self):
         if self.health == 2:
@@ -280,10 +364,16 @@ class AlienLevel4(Alien):
         else:
             self.rect.move_ip(0, self.speed)
         # check if alien's health reaches 0, if so - kill it
-        if self.health == 0:  # explode and die
+        if self.health == 0:
+            self.image[0] = self.image[(self.animation_count // 8) + 2]
+            # explosion animation upon death
             big_explosion_sound.play()
-            GameScene.aliens.empty()
-            self.kill()
+            if self.animation_count + 1 < 56:
+                self.animation_count += 1
+            else:  #
+                self.drop_collectable(self.drop_chance)
+                self.kill()
+                GameScene.aliens.empty()
 
 
 class Bullet(Character):
@@ -294,7 +384,7 @@ class Bullet(Character):
 
     # methods
     def draw(self):
-        frame.blit(self.image[0], (self.rect.x + 16, self.rect.y + 10))
+        frame.blit(self.image[0], self.rect)
 
     def update(self):
         self.rect.move_ip(0, -self.speed)
@@ -341,6 +431,7 @@ class Collectable(Character):
     def __init__(self, image, x, y, speed, category):
         super().__init__(image, x, y, speed)
         self.category = category
+        self.animation_count = 0
 
     # methods
     def draw(self):
@@ -348,10 +439,25 @@ class Collectable(Character):
 
     def update(self):
         self.rect.move_ip(0, self.speed)  # collectables have same speed as aliens
+        # coin animation
+        if self.category == "coin":
+            self.image[0] = self.image[(self.animation_count // 8)]
+            if self.animation_count + 1 < 64:
+                self.animation_count += 1
+            else:
+                self.animation_count = 0
 
     def check_boundaries(self):
         if self.rect.top > HEIGHT:
             self.kill()
+
+
+class Skin:
+    def __init__(self, image, name, cost):
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.name = name
+        self.cost = cost
 
 
 class Scene:
@@ -387,7 +493,7 @@ class GameScene(Scene):
     # OBJECTS
     # player object
     player_sprite = pygame.sprite.Group()
-    player = Player([functions.get_image('img/spaceship.png').convert_alpha()], 370, 480, 3)
+    player = Player([functions.get_image('img/skins/spaceship.png').convert_alpha()], 370, 480, 3)
     player_sprite.add(player)
 
     # alien objects groups
@@ -406,18 +512,18 @@ class GameScene(Scene):
     collectables = pygame.sprite.Group()
 
     # events
-    ALIEN_LVL1_RESPAWN = pygame.USEREVENT
-    COLLECTABLE_IMMUNITY_RESPAWN = pygame.USEREVENT - 1
+    COLLECTABLE_WEAPON_DAMAGED = pygame.USEREVENT - 4
     COLLECTABLE_ANGRY_RESPAWN = pygame.USEREVENT - 3
+    ALIEN_LVL4_RESPAWN = pygame.USEREVENT - 2
+    COLLECTABLE_IMMUNITY_RESPAWN = pygame.USEREVENT - 1
+    ALIEN_LVL1_RESPAWN = pygame.USEREVENT
     COLLECTABLE_LASER_RESPAWN = pygame.USEREVENT + 1
     COLLECTABLE_SHIELD_RESPAWN = pygame.USEREVENT + 2
     COLLECTABLE_AMMO_RESPAWN = pygame.USEREVENT + 3
     ALIEN_LVL3_RESPAWN = pygame.USEREVENT + 4
-    ALIEN_LVL4_RESPAWN = pygame.USEREVENT - 2
     ALIEN_LVL1_STOP = pygame.USEREVENT + 5
     ALIEN_LVL2_RESPAWN = pygame.USEREVENT + 6
     ALIEN_LVL2_STOP = pygame.USEREVENT + 7
-
     # active the game and alien phase, set start time, initialise cheats
     game_is_active = True
     pause = False
@@ -425,6 +531,7 @@ class GameScene(Scene):
     start_time = None  # start time used for laser and pause after quiting the options
     start_time_immunity = None  # start time used for immunity bonus
     start_time_angry_mode = None  # start time used for agry mode debuff
+    start_time_weapon_damaged = None  # start time used for weapon damaged debuff
     cheats_on = False  # ammo bonus easter egg code code cheat]]
 
     def __init__(self):
@@ -481,21 +588,24 @@ class GameScene(Scene):
                         elif event.key == pygame.K_8:
                             # shield bonus easter egg code code cheat
                             GameScene.player.has_shield = True
+                            if GameScene.player.num_of_shields < 4:
+                                GameScene.player.num_of_shields += 1
                         elif event.key == pygame.K_7:
                             # immunity bonus easter egg code cheat
                             GameScene.start_time_immunity = functions.get_current_time() + 50
                             GameScene.player.is_immune = True
-                        elif event.key == controls[4]:
-                            if GameScene.player.num_of_bullets > 0:
+                        elif event.key == controls[4]:  # shoot bullet
+                            if GameScene.player.num_of_bullets > 0 and GameScene.player.weapon_damaged is False:
                                 GameScene.player.num_of_bullets -= 1
                                 bullet_sound.play()  # shooting sound effect
+                                # fix position by 16 pixels so bullet appears in the middle of spaceship
                                 GameScene.bullets.add(
                                     Bullet([functions.get_image('img/bullet.png').convert_alpha()],
-                                           GameScene.player.rect.x,
+                                           GameScene.player.rect.x + 16,
                                            GameScene.player.rect.y, 5))
-                        elif event.key == controls[5]:
+                        elif event.key == controls[5]:  # shoot laser
                             if GameScene.player.has_laser:
-                                laser_sound.play()  # laser sound effect
+                                laser_beam_sound.play()  # laser sound effect
                                 GameScene.player.has_laser = False
                                 GameScene.start_time = functions.get_current_time()
                                 GameScene.laser.update()
@@ -503,7 +613,6 @@ class GameScene(Scene):
                         elif event.key == pygame.K_ESCAPE:
                             pygame.time.set_timer(GameScene.ALIEN_LVL2_STOP, 0)
                             self.switch_to_scene(GameOptionsScene())
-                            pygame.mixer.music.pause()
                             menu_sound.play()
 
                     elif event.type == pygame.KEYUP:
@@ -511,7 +620,11 @@ class GameScene(Scene):
                             GameScene.cheats_on = False
                     elif event.type == GameScene.ALIEN_LVL1_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
-                            Alien([functions.get_image('img/alien.png').convert_alpha()], random.randint(0, 736),
+                            Alien([functions.get_image('img/alien.png').convert_alpha(),
+                                   functions.get_image('img/dust0.png').convert_alpha(),
+                                   functions.get_image('img/dust1.png').convert_alpha(),
+                                   functions.get_image('img/dust2.png').convert_alpha(),
+                                   functions.get_image('img/dust3.png').convert_alpha()], random.randint(0, 736),
                                   random.randint(-500, -200), 2, 1))
                     elif event.type == GameScene.ALIEN_LVL2_RESPAWN:  # spawn level 2 alien
                         # generate random number which indicates where the hole in alien level 2 wall will be
@@ -521,19 +634,33 @@ class GameScene(Scene):
                             if random_number == i:
                                 extra = 95  # width of the hole in the alien level 2 wall
                             GameScene.aliens.add(
-                                AlienLevel2([functions.get_image('img/alien3.png').convert_alpha()],
+                                AlienLevel2([functions.get_image('img/alien2.png').convert_alpha(),
+                                             functions.get_image('img/dust0.png').convert_alpha(),
+                                             functions.get_image('img/dust1.png').convert_alpha(),
+                                             functions.get_image('img/dust2.png').convert_alpha(),
+                                             functions.get_image('img/dust3.png').convert_alpha()],
                                             64 * i + extra, -100, 2, 1))
                     elif event.type == GameScene.ALIEN_LVL3_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
-                            AlienLevel3([functions.get_image('img/alien4.png').convert_alpha(),
-                                         functions.get_image('img/alien4_1hp.png').convert_alpha()],
+                            AlienLevel3([functions.get_image('img/alien3.png').convert_alpha(),
+                                         functions.get_image('img/alien3_1hp.png').convert_alpha(),
+                                         functions.get_image('img/alien3_explosion0.png').convert_alpha(),
+                                         functions.get_image('img/alien3_explosion1.png').convert_alpha(),
+                                         functions.get_image('img/alien3_explosion2.png').convert_alpha(),
+                                         functions.get_image('img/alien3_explosion3.png').convert_alpha()],
                                         random.randint(0, 736),
                                         random.randint(-1000, -200), 2, 2))
                     elif event.type == GameScene.ALIEN_LVL4_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
                             AlienLevel4([functions.get_image('img/big_alien.png').convert_alpha(),
                                          functions.get_image('img/big_alien_1hp.png').convert_alpha(),
-                                         functions.get_image('img/big_alien_2hp.png').convert_alpha()],
+                                         functions.get_image('img/big_alien_2hp.png').convert_alpha(),
+                                         functions.get_image('img/big_alien_explosion0.png').convert_alpha(),
+                                         functions.get_image('img/big_alien_explosion1.png').convert_alpha(),
+                                         functions.get_image('img/big_alien_explosion2.png').convert_alpha(),
+                                         functions.get_image('img/big_alien_explosion3.png').convert_alpha(),
+                                         functions.get_image('img/big_alien_explosion4.png').convert_alpha(),
+                                         functions.get_image('img/big_alien_explosion5.png').convert_alpha()],
                                         random.randint(0, 544),
                                         random.randint(-1000, -500), 2, 3))
                     elif event.type == GameScene.ALIEN_LVL1_STOP:  # stop level  alien
@@ -571,6 +698,12 @@ class GameScene(Scene):
                             Collectable([functions.get_image('img/angry_mode.png').convert_alpha()],
                                         random.randint(0, 736),
                                         -100, 2, "angry_mode"))
+                    elif event.type == GameScene.COLLECTABLE_WEAPON_DAMAGED:
+                        GameScene.collectables.add(
+                            Collectable([functions.get_image('img/weapon_damaged.png').convert_alpha()],
+                                        random.randint(0, 736),
+                                        -100, 2, "weapon_damaged")
+                        )
 
     def update(self, keys):
         # player movement
@@ -632,6 +765,10 @@ class GameScene(Scene):
         if Alien.angry_mode:
             angry_mode_timer()
 
+        # disable weapon_damaged
+        if GameScene.player.weapon_damaged:
+            weapon_damaged_timer()
+
         # pause the game for 3 seconds after resuming the game
         if GameScene.pause:
             get_ready()
@@ -661,6 +798,9 @@ class GameScene(Scene):
         # show score label
         update_score_label(GameScene.score_label_x, GameScene.score_label_y)
 
+        # show collectables
+        show_collectables()
+
         # indicate that game is over via label
         if not GameScene.game_is_active:
             # game_over_label()
@@ -670,6 +810,9 @@ class GameScene(Scene):
 class GameOptionsScene(Scene):
     def __init__(self):
         super().__init__()
+        # pause main theme
+        pygame.mixer.music.pause()
+
         self.rect = functions.get_image(
             'img/controls_wsad.png').convert_alpha().get_rect()  # rect of the menu (size + x,y)
         self.rect.center = frame_rect.center  # rect but centered in the frame (size + x,y(centered))
@@ -690,7 +833,7 @@ class GameOptionsScene(Scene):
 
         # buttons objects
         self.button1 = gui_elements.Button(0, 40, 160, 40, WHITE, self.golden, "Audio", True)
-        self.button2 = gui_elements.Button(0, 120, 160, 40, WHITE, self.green, "Controls", True)
+        self.button2 = gui_elements.Button(0, 120, 160, 40, WHITE, self.green, "Info", True)
         self.button3 = gui_elements.Button(0, 200, 160, 40, WHITE, self.blue, "Restart", True)
         self.button4 = gui_elements.Button(0, 280, 160, 40, WHITE, (52, 45, 79), "Main Menu", True)
         self.buttons = [self.button1, self.button2, self.button3, self.button4]
@@ -717,7 +860,8 @@ class GameOptionsScene(Scene):
             self.switch_to_scene(GameOptionsAudioScene())
 
         def button2_action():
-            self.switch_to_scene(GameOptionsControlsScene())
+            pygame.time.wait(150)
+            self.switch_to_scene(GameOptionsInfoScene())
 
         def button3_action():
             game_erase()
@@ -751,7 +895,7 @@ class GameOptionsScene(Scene):
             button.write(self.menu, self.menu_font)
 
 
-class GameOptionsControlsScene(Scene):
+class GameOptionsInfoControlsScene(Scene):
     def __init__(self):
         super().__init__()
         if current_controls == 0:
@@ -764,13 +908,69 @@ class GameOptionsControlsScene(Scene):
     def event_handling(self, events):
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.switch_to_scene(GameOptionsScene())
+                self.switch_to_scene(GameOptionsInfoScene())
 
     def update(self, pressed_keys):
         pass
 
     def render(self):
         frame.blit(self.background, self.rect)
+
+
+class GameOptionsInfoSheetScene(Scene):
+    def __init__(self):
+        super().__init__()
+        self.background = functions.get_image('img/sheet.png').convert_alpha()
+        self.rect = self.background.get_rect()  # rect of the menu (size + x,y)
+        self.rect.center = frame_rect.center  # rect but centered in the frame (size + x,y(centered))
+
+    def event_handling(self, events):
+        for event in events:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.switch_to_scene(GameOptionsInfoScene())
+
+    def update(self, pressed_keys):
+        pass
+
+    def render(self):
+        frame.blit(self.background, self.rect)
+
+
+class GameOptionsInfoScene(GameOptionsScene):
+    def __init__(self):
+        super().__init__()
+        self.button1.text = "Controls"
+        self.button2.text = "Cheat Sheet"
+        self.buttons = [self.button1, self.button2]
+
+    def event_handling(self, events):
+        for event in events:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.switch_to_scene(GameOptionsScene())
+
+    def update(self, pressed_keys):
+        # Button action
+        def button1_action():
+            self.switch_to_scene(GameOptionsInfoControlsScene())
+
+        def button2_action():
+            self.switch_to_scene(GameOptionsInfoSheetScene())
+
+        self.button1.on_click_action(lambda: button1_action())
+        self.button2.on_click_action(lambda: button2_action())
+
+    def render(self):
+        # menu surface
+        frame.blit(functions.get_image('img/background1.png').convert(), (0, 0))
+        frame.blit(self.menu, self.rect)
+        # game paused text
+        self.game_paused_text.write(frame)
+        # Button draw with mouse hover effect
+        # Button text
+        for button in self.buttons:
+            button.draw(self.menu)
+            button.draw_border(self.menu, BLACK)
+            button.write(self.menu, self.menu_font)
 
 
 class MenuCreditsScene(Scene):
@@ -919,20 +1119,32 @@ class MenuScene(Scene):
         self.button2 = gui_elements.Button(0, 290, 160, 40, WHITE, BLACK, "Settings")
         self.button3 = gui_elements.Button(0, 370, 160, 40, WHITE, BLACK, "Credits")
         self.button4 = gui_elements.Button(0, 450, 160, 40, WHITE, BLACK, "Quit")
-        self.buttons = [self.button1, self.button2, self.button3, self.button4]
+        self.shop_button = gui_elements.Button(0, 0, 120, 40, WHITE, OCEAN, "Shop", False, 3)
+        self.buttons = [self.button1, self.button2, self.button3, self.button4, self.shop_button]
         self.button1.rect.centerx = frame_rect.centerx  # center buttons horizontally in the menu
         self.button2.rect.centerx = frame_rect.centerx
         self.button3.rect.centerx = frame_rect.centerx
         self.button4.rect.centerx = frame_rect.centerx
+        self.shop_button.rect.topright = frame_rect.topright
         # back button
         self.back_button_font = functions.get_font('fonts/Space_Galaxy.ttf', 40)
         self.back_button = gui_elements.Button(0, 0, 80, 40, WHITE, BLACK, "Back")
-        self.back_button.rect.bottomleft = frame_rect.bottomleft
 
+        self.back_button.rect.bottomleft = frame_rect.bottomleft
         # rank img
         self.rank_img = get_current_rank()
         self.rank_img_rect = self.rank_img.get_rect()
         self.rank_img_rect.bottomright = frame_rect.bottomright
+
+        # coins text and img
+        self.coin_img = functions.get_image('img/coin3.png')
+        self.coin_img_rect = self.coin_img.get_rect()
+        self.coin_img_rect.bottomleft = frame_rect.bottomleft
+        self.coin_img_rect.x += 15
+        if total_coins >= 10:
+            self.coin_img_rect.x += 10
+        self.coins_text = gui_elements.Text(str(total_coins), WHITE, self.menu_font)
+        self.coins_text.rect.bottomleft = frame_rect.bottomleft
 
     def event_handling(self, events):
         pass
@@ -954,10 +1166,14 @@ class MenuScene(Scene):
         def button4_action():
             self.terminate()
 
+        def shop_button_action():
+            self.switch_to_scene(MenuShopScene())
+
         self.button1.on_click_action(lambda: button1_action())
         self.button2.on_click_action(lambda: button2_action())
         self.button3.on_click_action(lambda: button3_action())
         self.button4.on_click_action(lambda: button4_action())
+        self.shop_button.on_click_action(lambda: shop_button_action())
 
     def render(self):
         # menu background and logo
@@ -965,11 +1181,213 @@ class MenuScene(Scene):
         frame.blit(self.logo, self.logo_rect)
         # rank preview
         frame.blit(self.rank_img, self.rank_img_rect)
+        # coins preview
+        self.coins_text.write(frame)
+        frame.blit(self.coin_img, self.coin_img_rect)
         # Button draw with mouse hover effect
         # Button text
         for button in self.buttons:
             button.draw(frame)
             button.write(frame, self.menu_font)
+        self.shop_button.draw_border(frame, (138, 197, 230))
+
+
+class MenuShopScene(MenuScene):
+    def __init__(self):
+        super().__init__()
+        # Font
+        self.font_big = functions.get_font('fonts/Space_Galaxy.ttf', 80)
+        self.font_medium = functions.get_font('fonts/Space_Galaxy.ttf', 30)
+        # Text
+        self.text = gui_elements.Text("Shop", WHITE, self.font_big)
+        self.text.rect.midtop = frame_rect.midtop
+        self.text.rect.y += 40
+        self.text2 = gui_elements.Text("Equip", WHITE, self.font_medium)
+        self.text2.rect.bottomleft = frame_rect.bottomleft
+        self.text2.rect.y -= 130
+        self.text2.rect.x += 15
+        self.texts = [self.text, self.text2]
+        # Back button
+        self.back_button.rect.topleft = frame_rect.topleft
+        # Skins
+        self.common_skin = Skin(functions.get_image('img/skins/spaceship.png'), "Rocket Alpha", 0)
+        self.rare_skin = Skin(functions.get_image('img/skins/spaceship2.png'), "Falcon 68", 3)
+        self.epic_skin = Skin(functions.get_image('img/skins/spaceship3.png'), "Force QPA", 6)
+        self.legendary_skin = Skin(functions.get_image('img/skins/spaceship4.png'), "Galaxy Warship Prime", 10)
+        self.skins = [self.common_skin, self.rare_skin, self.epic_skin, self.legendary_skin]
+        self.common_skin.rect.midleft = frame_rect.midleft
+        self.rare_skin.rect.midleft = frame_rect.midleft
+        self.epic_skin.rect.midleft = frame_rect.midleft
+        self.legendary_skin.rect.midleft = frame_rect.midleft
+        self.common_skin.rect.x += 100
+        self.rare_skin.rect.x += 260
+        self.epic_skin.rect.x += 410
+        self.legendary_skin.rect.x += 610
+        # Skin names
+        self.common_skin_name = gui_elements.Text(self.common_skin.name, WHITE, self.font_medium)
+        self.rare_skin_name = gui_elements.Text(self.rare_skin.name, WHITE, self.font_medium)
+        self.epic_skin_name = gui_elements.Text(self.epic_skin.name, WHITE, self.font_medium)
+        self.legendary_skin_name = gui_elements.Text(self.legendary_skin.name, WHITE, self.font_medium)
+        self.common_skin_name.rect = (65, 230)
+        self.rare_skin_name.rect = (240, 230)
+        self.epic_skin_name.rect = (385, 230)
+        self.legendary_skin_name.rect = (535, 230)
+        self.skin_names = [self.common_skin_name, self.rare_skin_name, self.epic_skin_name, self.legendary_skin_name]
+        # Skin costs
+        if skins_owned[0] == 0:
+            rare_cost = str(self.rare_skin.cost) + " Coins"
+        else:
+            rare_cost = "Owned"
+        if skins_owned[1] == 0:
+            epic_cost = str(self.epic_skin.cost) + " Coins"
+        else:
+            epic_cost = "Owned"
+        if skins_owned[2] == 0:
+            legendary_cost = str(self.legendary_skin.cost) + " Coins"
+        else:
+            legendary_cost = "Owned"
+        self.common_skin_cost = gui_elements.Button(80, 340, 100, 50, WHITE, BLACK, "Default")
+        self.rare_skin_cost = gui_elements.Button(240, 340, 100, 50, DARKBLUE, BLACK, rare_cost)
+        self.epic_skin_cost = gui_elements.Button(390, 340, 100, 50, MAGENTA, BLACK, epic_cost)
+        self.legendary_skin_cost = gui_elements.Button(595, 340, 100, 50, GOLD, BLACK,
+                                                       legendary_cost)
+        self.skin_costs = [self.common_skin_cost, self.rare_skin_cost, self.epic_skin_cost, self.legendary_skin_cost]
+        # skin equip buttons
+        # indicate which skin is currently equipped by drawing X in the box, set all the other boxes blank
+        if current_skin == 1:
+            x1 = "X"
+        else:
+            x1 = ""
+        if current_skin == 2:
+            x2 = "X"
+        else:
+            x2 = ""
+        if current_skin == 3:
+            x3 = "X"
+        else:
+            x3 = ""
+        if current_skin == 4:
+            x4 = "X"
+        else:
+            x4 = ""
+        self.common_skin_equip = gui_elements.Button(115, 440, 30, 30, WHITE, BLACK, x1)
+        self.rare_skin_equip = gui_elements.Button(275, 440, 30, 30, DARKBLUE, BLACK, x2)
+        self.epic_skin_equip = gui_elements.Button(425, 440, 30, 30, MAGENTA, BLACK, x3)
+        self.legendary_skin_equip = gui_elements.Button(630, 440, 30, 30, GOLD, BLACK, x4)
+        self.skin_equip_buttons = [self.common_skin_equip, self.rare_skin_equip, self.epic_skin_equip,
+                                   self.legendary_skin_equip]
+
+    def event_handling(self, events):
+        for event in events:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.switch_to_scene(MenuScene())
+
+    def update(self, pressed_keys):
+        def button2_action():
+            global total_coins
+            #  If you have enough coins and you don't own the skin already
+            if total_coins >= self.rare_skin.cost and skins_owned[0] == 0:
+                purchase_sound.play()
+                total_coins -= self.rare_skin.cost
+                skins_owned[0] = 1
+                save_data()
+                pygame.time.wait(300)
+                self.switch_to_scene(MenuShopScene())
+
+        def button3_action():
+            global total_coins
+            if total_coins >= self.epic_skin.cost and skins_owned[1] == 0:
+                purchase_sound.play()
+                total_coins -= self.epic_skin.cost
+                skins_owned[1] = 1
+                save_data()
+                pygame.time.wait(300)
+                self.switch_to_scene(MenuShopScene())
+
+        def button4_action():
+            global total_coins
+            if total_coins >= self.legendary_skin.cost and skins_owned[2] == 0:
+                purchase_sound.play()
+                total_coins -= self.legendary_skin.cost
+                skins_owned[2] = 1
+                save_data()
+                pygame.time.wait(300)
+                self.switch_to_scene(MenuShopScene())
+
+        def equip_common():
+            global current_skin
+            if current_skin != 1:
+                equip_sound.play()
+                current_skin = 1
+                save_data()
+                pygame.time.wait(200)
+                self.switch_to_scene(MenuShopScene())
+
+        def equip_rare():
+            global current_skin
+            if current_skin != 2 and skins_owned[0] == 1:
+                equip_sound.play()
+                current_skin = 2
+                save_data()
+                pygame.time.wait(200)
+                self.switch_to_scene(MenuShopScene())
+
+        def equip_epic():
+            global current_skin
+            if current_skin != 3 and skins_owned[1] == 1:
+                equip_sound.play()
+                current_skin = 3
+                save_data()
+                pygame.time.wait(200)
+                self.switch_to_scene(MenuShopScene())
+
+        def equip_legendary():
+            global current_skin
+            if current_skin != 4 and skins_owned[2] == 1:
+                equip_sound.play()
+                current_skin = 4
+                save_data()
+                pygame.time.wait(200)
+                self.switch_to_scene(MenuShopScene())
+
+        self.rare_skin_cost.on_click_action(lambda: button2_action())
+        self.epic_skin_cost.on_click_action(lambda: button3_action())
+        self.legendary_skin_cost.on_click_action(lambda: button4_action())
+        self.common_skin_equip.on_click_action(lambda: equip_common())
+        self.rare_skin_equip.on_click_action(lambda: equip_rare())
+        self.epic_skin_equip.on_click_action(lambda: equip_epic())
+        self.legendary_skin_equip.on_click_action(lambda: equip_legendary())
+
+        def back_button_action():
+            self.switch_to_scene(MenuScene())
+
+        self.back_button.on_click_action(lambda: back_button_action())
+
+    def render(self):
+        # menu background
+        frame.blit(self.background_img, (0, 0))
+        # coins preview
+        self.coins_text.write(frame)
+        frame.blit(self.coin_img, self.coin_img_rect)
+        # write "shop" and "equip"
+        for text in self.texts:
+            text.write(frame)
+        # back button
+        self.back_button.draw(frame)
+        self.back_button.write(frame, self.back_button_font)
+        # skins
+        for skin in self.skins:
+            frame.blit(skin.image, skin.rect)
+        # skin names
+        for name in self.skin_names:
+            name.write(frame)
+        # skin costs
+        for cost in self.skin_costs:
+            cost.draw(frame)
+            cost.write(frame, self.font_medium)
+        for equip in self.skin_equip_buttons:
+            equip.draw(frame)
+            equip.write(frame, self.font_medium)
 
 
 class MenuSettingsScene(MenuScene):
@@ -1300,39 +1718,51 @@ class GameFailScene(Scene):
         self.game_over_font = functions.get_font('fonts/Space_Galaxy.ttf', 90)
         self.try_again_font = functions.get_font('fonts/Space_Galaxy.ttf', 50)
         # Text
-        self.game_over_text = gui_elements.Text("Game Over!", WHITE, self.game_over_font, BLACK)
+        self.game_over_text = gui_elements.Text("Game Over", WHITE, self.game_over_font, BLACK)
         self.game_over_text.rect.centerx = frame_rect.centerx
-        self.game_over_text.rect.y = 160
+        self.game_over_text.rect.y = 180
         self.promotion_text = gui_elements.Text("YOU GOT PROMOTED", ORANGE, self.game_over_font)
         self.promotion_text.rect.midtop = frame_rect.midtop
         self.promotion_text.rect.y += 40
         self.top_score_text = gui_elements.Text("NEW TOP SCORE", BLUE, self.game_over_font)
         self.top_score_text.rect.midbottom = frame_rect.midbottom
         self.top_score_text.rect.y -= 100
+        self.coins_reward_text = gui_elements.Text("Reward  1 coin", GOLD, self.try_again_font)
+        self.coins_reward_text.rect.center = frame_rect.center
+        self.coins_reward_text.rect.y -= 165
+        self.coins_collected_text = gui_elements.Text(str(current_coins) + " Coins Collected", WHITE,
+                                                      self.try_again_font)
+        self.coins_collected_text.rect.midbottom = frame_rect.midbottom
         self.texts = [self.game_over_text]
         # Button
         self.button = gui_elements.Button(0, 0, 180, 80, WHITE, BLACK, "Try Again")
         self.button2 = gui_elements.Button(0, 0, 220, 60, WHITE, BLACK, "Main Menu")
         self.button.rect.center = frame_rect.center
+        self.button.rect.y += 20
         self.button2.rect.bottomright = frame_rect.bottomright
         self.buttons = [self.button, self.button2]
 
         got_top_score = update_top_score()  # update the top score if player hits the new record
         got_promoted = check_if_promotion()  # add exp and check if player is eligible for promotion
+        got_coins = update_total_coins()  # add coins collected in this game to the total amount of coins
 
         # play sound according to player results and write appropriate text
         if got_top_score and got_promoted:
             promotion_and_score_sound.play()
             self.texts.append(self.promotion_text)
             self.texts.append(self.top_score_text)
+            self.texts.append(self.coins_reward_text)
         elif got_top_score:
             top_score_sound.play()
             self.texts.append(self.top_score_text)
         elif got_promoted:
             promotion_sound.play()
             self.texts.append(self.promotion_text)
+            self.texts.append(self.coins_reward_text)
         else:
             fail_sound.play()
+        if got_coins:
+            self.texts.append(self.coins_collected_text)
 
     def event_handling(self, events):
         for event in events:
@@ -1348,6 +1778,8 @@ class GameFailScene(Scene):
             self.switch_to_scene(GameScene())
 
         def button2_action():
+            pygame.mixer.music.load('audio/menu_music.mp3')
+            pygame.mixer.music.play(-1)
             self.switch_to_scene(MenuScene())
 
         self.button.on_click_action(lambda: button_action())
@@ -1378,6 +1810,7 @@ def get_current_controls():
         return "Arrows"
 
 
+# get image of current rank
 def get_current_rank():
     global current_rank
     if current_rank == 1:
@@ -1397,9 +1830,10 @@ def get_current_rank():
     elif current_rank == 8:
         return functions.get_image('img/ranks/rank8.png').convert_alpha()
     else:
-        return functions.get_image('img/alien2.png').convert_alpha()
+        return functions.get_image('img/alien_cow.png').convert_alpha()
 
 
+# if current score is higher than top score, set current score as a new top score
 def update_top_score():
     global top_score, current_score
     if current_score > top_score:
@@ -1408,11 +1842,21 @@ def update_top_score():
         return True
 
 
-# save all data to the file, save/backup progress
+# add current coins to the total number of coins
+def update_total_coins():
+    global total_coins, current_coins
+    if current_coins > 0:
+        total_coins += current_coins
+        save_data()
+        return True
+
+
+# save all data to the file (save/backup progress)
 def save_data():
     global data, file
     data = [str(current_rank) + '\n', str(top_score) + '\n', str(current_exp) + '\n', str(current_controls) + '\n',
-            str(music_volume) + '\n', str(sounds_volume) + '\n', str(display_mode)]
+            str(music_volume) + '\n', str(sounds_volume) + '\n', str(display_mode) + '\n', str(total_coins) + '\n',
+            str(current_skin) + '\n', "".join([str(x) for x in skins_owned])]
     # write everything
     with open('fonts/font_size.txt', 'w') as file:
         file.writelines(data)
@@ -1429,16 +1873,17 @@ def check_if_promotion():
 
 
 def promote():
-    global current_exp, exp_required_total, current_rank, exp_required_total
+    global current_exp, exp_required_total, current_rank, exp_required_total, total_coins
     current_exp -= exp_required_total
     current_rank += 1
     exp_required_total = int(999 * math.sqrt(math.pow(2, current_rank)))
+    total_coins += 1
     save_data()
 
 
 # game functions
 def update_score_label(x, y):
-    if not GameScene.player.has_laser:
+    if not GameScene.player.has_shield:
         score_text = GameScene.score_font.render("Score: " + str(current_score), True, WHITE, BLACK)
     else:
         score_text = GameScene.score_font.render("Score: " + str(current_score), True, WHITE,
@@ -1447,7 +1892,7 @@ def update_score_label(x, y):
 
 
 def update_bullets_label(x, y):
-    if not GameScene.player.has_shield:
+    if not GameScene.player.has_laser:
         num_of_bullets_text = GameScene.score_font.render(
             "Bullets: " + str(GameScene.player.num_of_bullets), True,
             WHITE, BLACK)
@@ -1465,28 +1910,13 @@ def update_bullets_label(x, y):
         frame.blit(num_of_bullets_text, (x, y))
 
 
-def alert_wave_coming(seconds_left):
-    if GameScene.is_alien_phase:
-        wave_alert_text = GameScene.score_font.render(
-            "Alien wall coming in " + str(seconds_left) + " seconds. Prepare yourself",
-            True, WHITE,
-            BLACK)
-        frame.blit(wave_alert_text, (200, 570))
-    else:
-        wave_alert_text = GameScene.score_font.render(
-            str(seconds_left) + " seconds left till end of the wave",
-            True,
-            WHITE,
-            BLACK)
-        frame.blit(wave_alert_text, (220, 570))
-
-
 def game_over_label():
     game_over_text = GameScene.game_over_font.render("Game over!", True, WHITE, BLACK)
     frame.blit(game_over_text, (230, 260))
 
 
 def game_erase():
+    # remove characters and objects
     GameScene.player_sprite.empty()
     GameScene.aliens.empty()
     GameScene.collectables.empty()
@@ -1496,15 +1926,51 @@ def game_erase():
     # disable timers
     pygame.time.set_timer(GameScene.ALIEN_LVL2_RESPAWN, 0)
     pygame.time.set_timer(GameScene.ALIEN_LVL2_STOP, 0)
-    # disable angry mode
+    # disable modes
     Alien.angry_mode = False
+    GameScene.player.weapon_damaged = False
+
+
+#  return collection of sprites for current equipped skin
+def get_current_skin():
+    global current_skin
+    if current_skin == 1:
+        return [functions.get_image('img/skins/spaceship.png').convert_alpha(),
+                functions.get_image('img/skins/spaceship_l2.png').convert_alpha(),
+                functions.get_image('img/skins/spaceship_r2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship_l2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship_r2.png').convert_alpha()]
+    elif current_skin == 2:
+        return [functions.get_image('img/skins/spaceship2.png').convert_alpha(),
+                functions.get_image('img/skins/spaceship2_l2.png').convert_alpha(),
+                functions.get_image('img/skins/spaceship2_r2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship2_l2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship2_r2.png').convert_alpha()]
+    elif current_skin == 3:
+        return [functions.get_image('img/skins/spaceship3.png').convert_alpha(),
+                functions.get_image('img/skins/spaceship3_l2.png').convert_alpha(),
+                functions.get_image('img/skins/spaceship3_r2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship3.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship3_l2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship3_r2.png').convert_alpha()]
+    elif current_skin == 4:
+        return [functions.get_image('img/skins/spaceship4.png').convert_alpha(),
+                functions.get_image('img/skins/spaceship4_l2.png').convert_alpha(),
+                functions.get_image('img/skins/spaceship4_r2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship4.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship4_l2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship4_r2.png').convert_alpha()]
 
 
 def game_restart():
-    global current_score, map_score
+    global current_score, map_score, current_coins, current_skin
     current_score = 0
+    current_coins = 0
     map_score = 0
-    GameScene.player = Player([functions.get_image('img/spaceship.png').convert_alpha()], 370, 480, 3)
+    current_skin_sprites = get_current_skin()
+    GameScene.player = Player(current_skin_sprites, 370, 480, 3)
     GameScene.player_sprite.add(GameScene.player)
     GameScene.start_time = functions.get_current_time()
     GameScene.pause = True
@@ -1518,6 +1984,7 @@ def game_restart():
     pygame.time.set_timer(GameScene.COLLECTABLE_LASER_RESPAWN, random.randint(90000, 110000))
     pygame.time.set_timer(GameScene.COLLECTABLE_IMMUNITY_RESPAWN, random.randint(100000, 130000))
     pygame.time.set_timer(GameScene.COLLECTABLE_ANGRY_RESPAWN, random.randint(50000, 100000))
+    pygame.time.set_timer(GameScene.COLLECTABLE_WEAPON_DAMAGED, random.randint(70000, 120000))
     functions.load_music('audio/soundtrack.mp3')
     pygame.mixer.music.play(-1)
     GameScene.game_is_active = True
@@ -1527,12 +1994,12 @@ def game_restart():
 def get_ready():  # count 3 seconds before resuming the game, blit the counter
     counter = functions.get_current_time() - GameScene.start_time
     if counter >= pause_time:
-        pygame.time.set_timer(GameScene.ALIEN_LVL2_STOP, 22000)
         GameScene.pause = False
         pygame.mixer.music.unpause()
     else:
         counter_text = GameScene.counter_font.render(str((counter - pause_time) * -1), True, WHITE)
         frame.blit(counter_text, (370, 210))
+        pygame.mixer.music.pause()
 
 
 # count x seconds and then take off the immunity buff
@@ -1554,23 +2021,37 @@ def angry_mode_timer():
         Alien.angry_mode = False
     else:
         angry_mode_text = GameScene.game_over_font.render(
-            "Aliens are faster... " + (str((counter - immunity_time) * -1)), True, RED)
+            "Aliens are faster...  " + (str((counter - angry_mode_time) * -1)), True, RED)
         frame.blit(angry_mode_text, (frame_rect.left + 90, frame_rect.bottom - 80))
 
 
+# count x seconds and then switch off the weapon damaged debuff
+def weapon_damaged_timer():
+    counter = functions.get_current_time() - GameScene.start_time_weapon_damaged
+    if counter >= weapon_damaged_time:
+        GameScene.player.weapon_damaged = False
+    else:
+        weapon_damaged_text = functions.get_font('fonts/Space_Galaxy.ttf', 40).render(
+            "Fixing damaged weapon... " + (str((counter - weapon_damaged_time) * -1)), True, TOMATO)
+        frame.blit(weapon_damaged_text, (frame_rect.centerx - 170, frame_rect.centery - 20))
+
+
+# if two aliens are overlapping, kill one of them (only kills level 1 aliens)
 def fix_alien_overlapping(alien):
     if any(alien.rect.colliderect(alien2.rect) for alien2 in GameScene.aliens if
            alien2 is not alien) or \
             any(alien.rect.colliderect(collectable.rect) for collectable in
                 GameScene.collectables):
         if alien.level == 1:
-            alien.kill()
+            alien.health = 0
 
 
+# alien collisions with laser/bullet
+# player collisions with alien/alien bullet
 def check_if_alien_collide():
     alien_bullet_collision = pygame.sprite.groupcollide(GameScene.aliens,
                                                         GameScene.bullets, False, True,
-                                                        pygame.sprite.collide_circle)
+                                                        pygame.sprite.collide_mask)
     for alien in alien_bullet_collision:
         explosion_sound.play()
         alien.health -= 1  # reduce alien's health by 1 if it collides with bullet
@@ -1581,43 +2062,76 @@ def check_if_alien_collide():
                                                             pygame.sprite.collide_mask)
         for alien in alien_laser_collision:
             explosion_sound.play()
-            alien.health -= 1
+            if alien.health > 0:
+                alien.health -= 1
 
     alien_player_collision = pygame.sprite.spritecollide(GameScene.player,
                                                          GameScene.aliens, True,
                                                          pygame.sprite.collide_mask)
 
     bullet_player_collision = pygame.sprite.spritecollide(GameScene.player, GameScene.enemy_bullets, True,
-                                                          pygame.sprite.collide_circle)
-    if alien_player_collision and GameScene.player.has_shield:
+                                                          pygame.sprite.collide_mask)
+    if (alien_player_collision or bullet_player_collision) and GameScene.player.has_shield:
         shield_broke_sound.play()
-        GameScene.player.has_shield = False
-    elif bullet_player_collision and GameScene.player.has_shield:
-        shield_broke_sound.play()
-        GameScene.player.has_shield = False
+        GameScene.player.num_of_shields -= 1
+        if GameScene.player.num_of_shields == 0:
+            GameScene.player.has_shield = False
     else:
         if alien_player_collision or bullet_player_collision:
             GameScene.game_is_active = False
             game_erase()
 
 
+#  check if collectable is colliding with the player and do action depending on the type of collectable
 def check_if_collectable_collide():
     collectable_player_collision = pygame.sprite.spritecollide(GameScene.player,
                                                                GameScene.collectables,
                                                                True,
                                                                pygame.sprite.collide_mask)
     if collectable_player_collision:
-        collectable_sound.play()
+        collectable_collection_sound.play()
         for item in collectable_player_collision:
             if item.category == "ammo":  # get 1 ammo, you can shoot with ammo
                 GameScene.player.num_of_bullets += 1
             elif item.category == "shield":  # get shield, it protects you from 1 hit
                 GameScene.player.has_shield = True
+                if GameScene.player.num_of_shields < 4:
+                    GameScene.player.num_of_shields += 1
+                    shield_collection_sound.play()
             elif item.category == "laser":  # get 1 laser, it destroys aliens in front of you
                 GameScene.player.has_laser = True
+                laser_collection_sound.play()
             elif item.category == "immunity":  # get immunity, you don't take damage for x seconds
                 GameScene.player.is_immune = True
                 GameScene.start_time_immunity = functions.get_current_time()
+                immunity_collection_sound.play()
             elif item.category == "angry_mode":  # activate angry mode, all aliens move faster
                 Alien.angry_mode = True
                 GameScene.start_time_angry_mode = functions.get_current_time()
+                angry_mode_collection_sound.play()
+            elif item.category == "weapon_damaged":
+                GameScene.player.weapon_damaged = True
+                GameScene.start_time_weapon_damaged = functions.get_current_time()
+                weapon_damaged_collection_sound.play()
+            elif item.category == "coin":
+                global current_coins
+                current_coins += 1
+                coin_collection_sound.play()
+
+
+# show what collectables are active during the game
+def show_collectables():
+    if GameScene.player.has_shield:
+        for i in range(GameScene.player.num_of_shields):
+            frame.blit(functions.get_image('img/shield.png'), (34 * i + 10, 45))
+    if GameScene.player.has_laser:
+        frame.blit(functions.get_image('img/laser_gun.png'), (frame_rect.right - 95, 45))
+    if GameScene.player.weapon_damaged:
+        frame.blit(functions.get_image('img/weapon_damaged.png'), (frame_rect.right - 45, 45))
+    if GameScene.player.is_immune:
+        frame.blit(functions.get_image('img/immune.png'), (10, 90))
+    if Alien.angry_mode:
+        frame.blit(functions.get_image('img/angry_mode.png'), (frame_rect.right - 45, 90))
+    if current_coins > 0:
+        for i in range(current_coins):
+            frame.blit(functions.get_image('img/coin3.png'), (28 * i + 90, 7))
