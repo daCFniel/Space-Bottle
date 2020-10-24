@@ -1353,10 +1353,10 @@ class MenuShopScene(MenuScene):
         self.rare_skin_cost.on_click_action(lambda: button2_action())
         self.epic_skin_cost.on_click_action(lambda: button3_action())
         self.legendary_skin_cost.on_click_action(lambda: button4_action())
-        self.common_skin_equip.on_click_action(lambda : equip_common())
-        self.rare_skin_equip.on_click_action(lambda : equip_rare())
-        self.epic_skin_equip.on_click_action(lambda : equip_epic())
-        self.legendary_skin_equip.on_click_action(lambda : equip_legendary())
+        self.common_skin_equip.on_click_action(lambda: equip_common())
+        self.rare_skin_equip.on_click_action(lambda: equip_rare())
+        self.epic_skin_equip.on_click_action(lambda: equip_epic())
+        self.legendary_skin_equip.on_click_action(lambda: equip_legendary())
 
         def back_button_action():
             self.switch_to_scene(MenuScene())
@@ -1810,6 +1810,7 @@ def get_current_controls():
         return "Arrows"
 
 
+# get image of current rank
 def get_current_rank():
     global current_rank
     if current_rank == 1:
@@ -1832,6 +1833,7 @@ def get_current_rank():
         return functions.get_image('img/alien_cow.png').convert_alpha()
 
 
+# if current score is higher than top score, set current score as a new top score
 def update_top_score():
     global top_score, current_score
     if current_score > top_score:
@@ -1840,6 +1842,7 @@ def update_top_score():
         return True
 
 
+# add current coins to the total number of coins
 def update_total_coins():
     global total_coins, current_coins
     if current_coins > 0:
@@ -1848,7 +1851,7 @@ def update_total_coins():
         return True
 
 
-# save all data to the file, save/backup progress
+# save all data to the file (save/backup progress)
 def save_data():
     global data, file
     data = [str(current_rank) + '\n', str(top_score) + '\n', str(current_exp) + '\n', str(current_controls) + '\n',
@@ -1905,22 +1908,6 @@ def update_bullets_label(x, y):
         frame.blit(num_of_bullets_text, (x - 30, y))
     else:
         frame.blit(num_of_bullets_text, (x, y))
-
-
-def alert_wave_coming(seconds_left):
-    if GameScene.is_alien_phase:
-        wave_alert_text = GameScene.score_font.render(
-            "Alien wall coming in " + str(seconds_left) + " seconds. Prepare yourself",
-            True, WHITE,
-            BLACK)
-        frame.blit(wave_alert_text, (200, 570))
-    else:
-        wave_alert_text = GameScene.score_font.render(
-            str(seconds_left) + " seconds left till end of the wave",
-            True,
-            WHITE,
-            BLACK)
-        frame.blit(wave_alert_text, (220, 570))
 
 
 def game_over_label():
@@ -2038,6 +2025,7 @@ def angry_mode_timer():
         frame.blit(angry_mode_text, (frame_rect.left + 90, frame_rect.bottom - 80))
 
 
+# count x seconds and then switch off the weapon damaged debuff
 def weapon_damaged_timer():
     counter = functions.get_current_time() - GameScene.start_time_weapon_damaged
     if counter >= weapon_damaged_time:
@@ -2048,6 +2036,7 @@ def weapon_damaged_timer():
         frame.blit(weapon_damaged_text, (frame_rect.centerx - 170, frame_rect.centery - 20))
 
 
+# if two aliens are overlapping, kill one of them (only kills level 1 aliens)
 def fix_alien_overlapping(alien):
     if any(alien.rect.colliderect(alien2.rect) for alien2 in GameScene.aliens if
            alien2 is not alien) or \
@@ -2057,6 +2046,8 @@ def fix_alien_overlapping(alien):
             alien.health = 0
 
 
+# alien collisions with laser/bullet
+# player collisions with alien/alien bullet
 def check_if_alien_collide():
     alien_bullet_collision = pygame.sprite.groupcollide(GameScene.aliens,
                                                         GameScene.bullets, False, True,
@@ -2071,7 +2062,7 @@ def check_if_alien_collide():
                                                             pygame.sprite.collide_mask)
         for alien in alien_laser_collision:
             explosion_sound.play()
-            if (alien.health > 0):
+            if alien.health > 0:
                 alien.health -= 1
 
     alien_player_collision = pygame.sprite.spritecollide(GameScene.player,
@@ -2091,6 +2082,7 @@ def check_if_alien_collide():
             game_erase()
 
 
+#  check if collectable is colliding with the player and do action depending on the type of collectable
 def check_if_collectable_collide():
     collectable_player_collision = pygame.sprite.spritecollide(GameScene.player,
                                                                GameScene.collectables,
@@ -2127,6 +2119,7 @@ def check_if_collectable_collide():
                 coin_collection_sound.play()
 
 
+# show what collectables are active during the game
 def show_collectables():
     if GameScene.player.has_shield:
         for i in range(GameScene.player.num_of_shields):
