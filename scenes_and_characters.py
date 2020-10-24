@@ -52,10 +52,12 @@ weapon_damaged_collection_sound = functions.get_sound('audio/weapon_damaged.wav'
 coin_collection_sound = functions.get_sound('audio/coin.wav')
 laser_collection_sound = functions.get_sound('audio/laser.wav')
 purchase_sound = functions.get_sound('audio/purchase.wav')
+equip_sound = functions.get_sound('audio/equip.wav')
 sounds = [bullet_sound, explosion_sound, shield_broke_sound, collectable_collection_sound, laser_beam_sound, cow_sound,
           fail_sound, promotion_sound, top_score_sound, promotion_and_score_sound, menu_sound, accept_sound,
           big_explosion_sound, shield_collection_sound, immunity_collection_sound, laser_collection_sound,
-          angry_mode_collection_sound, weapon_damaged_collection_sound, coin_collection_sound, purchase_sound]
+          angry_mode_collection_sound, weapon_damaged_collection_sound, coin_collection_sound, purchase_sound,
+          equip_sound]
 
 #  open file responsible for storing the progress
 #  and load the data
@@ -80,8 +82,10 @@ sounds_volume = int(data[5])  # default value 40
 display_mode = int(data[6])  # Integer 0 or 1 where 0 - window; 1 - fullscreen
 # total current coins
 total_coins = int(data[7])
+# current skin
+current_skin = int(data[8])  # 1 - 4:  1-default; 2-rare; 3-epic; 4-legendary
 # skins owned
-skins_owned = [int(x) for x in data[8]]  # list comprehension
+skins_owned = [int(x) for x in data[9]]  # list comprehension
 
 # exp required for next promotion based on current rank (math module used to make the numbers nonlinear)
 exp_required_total = int(999 * math.sqrt(math.pow(2, current_rank)))
@@ -113,7 +117,6 @@ class Character(pygame.sprite.Sprite):
 
 # sub classes
 class Player(Character):
-
     # constructor
     def __init__(self, image, x, y, speed):
         super().__init__(image, x, y, speed)
@@ -123,20 +126,13 @@ class Player(Character):
         self.weapon_damaged = False
         self.num_of_bullets = 3
         self.num_of_shields = 0
-        self.images = []
-        self.images.append(self.image[0])
-        self.images.append(functions.get_image('img/spaceship_l2.png').convert_alpha())
-        self.images.append(functions.get_image('img/spaceship_r2.png').convert_alpha())
-        self.images.append(functions.get_image('img/shielded_spaceship.png').convert_alpha())
-        self.images.append(functions.get_image('img/shielded_spaceship_l2.png').convert_alpha())
-        self.images.append(functions.get_image('img/shielded_spaceship_r2.png').convert_alpha())
-        self.images.append(functions.get_image('img/jet.png').convert_alpha())
-        self.images.append(functions.get_image('img/immune_small.png').convert_alpha())
-        self.images.append(functions.get_image('img/jet_left.png').convert_alpha())
-        self.images.append(functions.get_image('img/jet_right.png').convert_alpha())
-        self.images.append(functions.get_image('img/parachute.png').convert_alpha())
-        self.images.append(functions.get_image('img/wind.png').convert_alpha())
-        self.images.append(functions.get_image('img/wind2.png').convert_alpha())
+        self.image.append(functions.get_image('img/jet.png').convert_alpha())
+        self.image.append(functions.get_image('img/immune_small.png').convert_alpha())
+        self.image.append(functions.get_image('img/jet_left.png').convert_alpha())
+        self.image.append(functions.get_image('img/jet_right.png').convert_alpha())
+        self.image.append(functions.get_image('img/parachute.png').convert_alpha())
+        self.image.append(functions.get_image('img/wind.png').convert_alpha())
+        self.image.append(functions.get_image('img/wind2.png').convert_alpha())
 
     def check_boundaries(self):
         if self.rect.left < -self.rect.width / 2:  # check if character hits the boundaries
@@ -150,27 +146,31 @@ class Player(Character):
 
     # methods
     def draw(self, key):
+        # when player presses all the buttons at once
         if key[controls[1]] and key[controls[3]] and (key[controls[0]] or key[controls[2]]):
-            frame.blit(self.images[0], self.rect)  # when player presses all the buttons at once
+            if self.has_shield:
+                frame.blit(self.image[3], self.rect)
+            else:
+                frame.blit(self.image[0], self.rect)
         else:
             if key[controls[1]]:
                 if self.has_shield:
-                    frame.blit(self.images[4], self.rect)
+                    frame.blit(self.image[4], self.rect)
                 else:
-                    frame.blit(self.images[1], self.rect)
+                    frame.blit(self.image[1], self.rect)
             elif key[controls[3]]:
                 if self.has_shield:
-                    frame.blit(self.images[5], self.rect)
+                    frame.blit(self.image[5], self.rect)
                 else:
-                    frame.blit(self.images[2], self.rect)
+                    frame.blit(self.image[2], self.rect)
             else:
                 if self.has_shield:
-                    frame.blit(self.images[3], self.rect)
+                    frame.blit(self.image[3], self.rect)
                 else:
-                    frame.blit(self.images[0], self.rect)
+                    frame.blit(self.image[0], self.rect)
             # show that player is immune
         if self.is_immune:
-            frame.blit(self.images[7], (self.rect.centerx - 12, self.rect.bottom))
+            frame.blit(self.image[7], (self.rect.centerx - 12, self.rect.bottom))
 
     def update(self, key):
         shift_pressed = key[controls[6]] or key[pygame.K_RSHIFT]
@@ -178,33 +178,33 @@ class Player(Character):
             if shift_pressed:
                 self.rect.move_ip(0, -self.speed)
                 if not key[controls[1]] and not key[controls[3]] and not key[controls[2]]:
-                    frame.blit(self.images[6], self.rect.bottomleft)
-                    frame.blit(self.images[6], self.rect.midbottom)
+                    frame.blit(self.image[6], self.rect.bottomleft)
+                    frame.blit(self.image[6], self.rect.midbottom)
                 elif key[controls[1]] and not key[controls[3]] and not key[controls[2]]:
-                    frame.blit(self.images[8], (self.rect.centerx + 3, self.rect.centery + 20))
+                    frame.blit(self.image[8], (self.rect.centerx + 3, self.rect.centery + 20))
                 elif key[controls[3]] and not key[controls[1]] and not key[controls[2]]:
-                    frame.blit(self.images[9], (self.rect.centerx - 35, self.rect.centery + 19))
+                    frame.blit(self.image[9], (self.rect.centerx - 35, self.rect.centery + 19))
             else:
                 self.rect.move_ip(0, -self.speed + 1)
         if key[controls[2]]:  # back
             if shift_pressed:
                 self.rect.move_ip(0, self.speed)
                 if not key[controls[0]]:
-                    frame.blit(self.images[10], (self.rect.left, self.rect.bottom - 20))
+                    frame.blit(self.image[10], (self.rect.left, self.rect.bottom - 20))
             else:
                 self.rect.move_ip(0, self.speed - 1)
         if key[controls[1]]:  # left
             if shift_pressed:
                 self.rect.move_ip(-self.speed, 0)
                 if not key[controls[3]] and not key[controls[0]] and not key[controls[2]]:
-                    frame.blit(self.images[11], (self.rect.centerx + 15, self.rect.centery - 20))
+                    frame.blit(self.image[11], (self.rect.centerx + 15, self.rect.centery - 20))
             else:
                 self.rect.move_ip(-self.speed + 1, 0)
         if key[controls[3]]:  # right
             if shift_pressed:
                 self.rect.move_ip(self.speed, 0)
                 if not key[controls[1]] and not key[controls[0]] and not key[controls[2]]:
-                    frame.blit(self.images[12], (self.rect.centerx - 50, self.rect.centery - 20))
+                    frame.blit(self.image[12], (self.rect.centerx - 50, self.rect.centery - 20))
             else:
                 self.rect.move_ip(self.speed - 1, 0)
 
@@ -493,7 +493,7 @@ class GameScene(Scene):
     # OBJECTS
     # player object
     player_sprite = pygame.sprite.Group()
-    player = Player([functions.get_image('img/spaceship.png').convert_alpha()], 370, 480, 3)
+    player = Player([functions.get_image('img/skins/spaceship.png').convert_alpha()], 370, 480, 3)
     player_sprite.add(player)
 
     # alien objects groups
@@ -1202,13 +1202,18 @@ class MenuShopScene(MenuScene):
         self.text = gui_elements.Text("Shop", WHITE, self.font_big)
         self.text.rect.midtop = frame_rect.midtop
         self.text.rect.y += 40
+        self.text2 = gui_elements.Text("Equip", WHITE, self.font_medium)
+        self.text2.rect.bottomleft = frame_rect.bottomleft
+        self.text2.rect.y -= 130
+        self.text2.rect.x += 15
+        self.texts = [self.text, self.text2]
         # Back button
         self.back_button.rect.topleft = frame_rect.topleft
         # Skins
-        self.common_skin = Skin(functions.get_image('img/spaceship.png'), "Rocket Alpha", 0)
-        self.rare_skin = Skin(functions.get_image('img/spaceship2.png'), "Falcon 68", 3)
-        self.epic_skin = Skin(functions.get_image('img/spaceship3.png'), "Force QPA", 6)
-        self.legendary_skin = Skin(functions.get_image('img/spaceship4.png'), "Galaxy Warship Prime", 10)
+        self.common_skin = Skin(functions.get_image('img/skins/spaceship.png'), "Rocket Alpha", 0)
+        self.rare_skin = Skin(functions.get_image('img/skins/spaceship2.png'), "Falcon 68", 3)
+        self.epic_skin = Skin(functions.get_image('img/skins/spaceship3.png'), "Force QPA", 6)
+        self.legendary_skin = Skin(functions.get_image('img/skins/spaceship4.png'), "Galaxy Warship Prime", 10)
         self.skins = [self.common_skin, self.rare_skin, self.epic_skin, self.legendary_skin]
         self.common_skin.rect.midleft = frame_rect.midleft
         self.rare_skin.rect.midleft = frame_rect.midleft
@@ -1241,12 +1246,36 @@ class MenuShopScene(MenuScene):
             legendary_cost = str(self.legendary_skin.cost) + " Coins"
         else:
             legendary_cost = "Owned"
-        self.common_skin_cost = gui_elements.Button(85, 340, 100, 50, WHITE, BLACK, "Default")
-        self.rare_skin_cost = gui_elements.Button(245, 340, 100, 50, DARKBLUE, BLACK, rare_cost)
-        self.epic_skin_cost = gui_elements.Button(395, 340, 100, 50, MAGENTA, BLACK, epic_cost)
+        self.common_skin_cost = gui_elements.Button(80, 340, 100, 50, WHITE, BLACK, "Default")
+        self.rare_skin_cost = gui_elements.Button(240, 340, 100, 50, DARKBLUE, BLACK, rare_cost)
+        self.epic_skin_cost = gui_elements.Button(390, 340, 100, 50, MAGENTA, BLACK, epic_cost)
         self.legendary_skin_cost = gui_elements.Button(595, 340, 100, 50, GOLD, BLACK,
                                                        legendary_cost)
         self.skin_costs = [self.common_skin_cost, self.rare_skin_cost, self.epic_skin_cost, self.legendary_skin_cost]
+        # skin equip buttons
+        # indicate which skin is currently equipped by drawing X in the box, set all the other boxes blank
+        if current_skin == 1:
+            x1 = "X"
+        else:
+            x1 = ""
+        if current_skin == 2:
+            x2 = "X"
+        else:
+            x2 = ""
+        if current_skin == 3:
+            x3 = "X"
+        else:
+            x3 = ""
+        if current_skin == 4:
+            x4 = "X"
+        else:
+            x4 = ""
+        self.common_skin_equip = gui_elements.Button(115, 440, 30, 30, WHITE, BLACK, x1)
+        self.rare_skin_equip = gui_elements.Button(275, 440, 30, 30, DARKBLUE, BLACK, x2)
+        self.epic_skin_equip = gui_elements.Button(425, 440, 30, 30, MAGENTA, BLACK, x3)
+        self.legendary_skin_equip = gui_elements.Button(630, 440, 30, 30, GOLD, BLACK, x4)
+        self.skin_equip_buttons = [self.common_skin_equip, self.rare_skin_equip, self.epic_skin_equip,
+                                   self.legendary_skin_equip]
 
     def event_handling(self, events):
         for event in events:
@@ -1254,9 +1283,6 @@ class MenuShopScene(MenuScene):
                 self.switch_to_scene(MenuScene())
 
     def update(self, pressed_keys):
-        def button1_action():
-            pass
-
         def button2_action():
             global total_coins
             #  If you have enough coins and you don't own the skin already
@@ -1288,10 +1314,49 @@ class MenuShopScene(MenuScene):
                 pygame.time.wait(300)
                 self.switch_to_scene(MenuShopScene())
 
-        self.common_skin_cost.on_click_action(lambda: button1_action())
+        def equip_common():
+            global current_skin
+            if current_skin != 1:
+                equip_sound.play()
+                current_skin = 1
+                save_data()
+                pygame.time.wait(200)
+                self.switch_to_scene(MenuShopScene())
+
+        def equip_rare():
+            global current_skin
+            if current_skin != 2 and skins_owned[0] == 1:
+                equip_sound.play()
+                current_skin = 2
+                save_data()
+                pygame.time.wait(200)
+                self.switch_to_scene(MenuShopScene())
+
+        def equip_epic():
+            global current_skin
+            if current_skin != 3 and skins_owned[1] == 1:
+                equip_sound.play()
+                current_skin = 3
+                save_data()
+                pygame.time.wait(200)
+                self.switch_to_scene(MenuShopScene())
+
+        def equip_legendary():
+            global current_skin
+            if current_skin != 4 and skins_owned[2] == 1:
+                equip_sound.play()
+                current_skin = 4
+                save_data()
+                pygame.time.wait(200)
+                self.switch_to_scene(MenuShopScene())
+
         self.rare_skin_cost.on_click_action(lambda: button2_action())
         self.epic_skin_cost.on_click_action(lambda: button3_action())
         self.legendary_skin_cost.on_click_action(lambda: button4_action())
+        self.common_skin_equip.on_click_action(lambda : equip_common())
+        self.rare_skin_equip.on_click_action(lambda : equip_rare())
+        self.epic_skin_equip.on_click_action(lambda : equip_epic())
+        self.legendary_skin_equip.on_click_action(lambda : equip_legendary())
 
         def back_button_action():
             self.switch_to_scene(MenuScene())
@@ -1304,8 +1369,9 @@ class MenuShopScene(MenuScene):
         # coins preview
         self.coins_text.write(frame)
         frame.blit(self.coin_img, self.coin_img_rect)
-        # write header text
-        self.text.write(frame)
+        # write "shop" and "equip"
+        for text in self.texts:
+            text.write(frame)
         # back button
         self.back_button.draw(frame)
         self.back_button.write(frame, self.back_button_font)
@@ -1319,6 +1385,9 @@ class MenuShopScene(MenuScene):
         for cost in self.skin_costs:
             cost.draw(frame)
             cost.write(frame, self.font_medium)
+        for equip in self.skin_equip_buttons:
+            equip.draw(frame)
+            equip.write(frame, self.font_medium)
 
 
 class MenuSettingsScene(MenuScene):
@@ -1784,7 +1853,7 @@ def save_data():
     global data, file
     data = [str(current_rank) + '\n', str(top_score) + '\n', str(current_exp) + '\n', str(current_controls) + '\n',
             str(music_volume) + '\n', str(sounds_volume) + '\n', str(display_mode) + '\n', str(total_coins) + '\n',
-            "".join([str(x) for x in skins_owned])]
+            str(current_skin) + '\n', "".join([str(x) for x in skins_owned])]
     # write everything
     with open('fonts/font_size.txt', 'w') as file:
         file.writelines(data)
@@ -1875,12 +1944,46 @@ def game_erase():
     GameScene.player.weapon_damaged = False
 
 
+#  return collection of sprites for current equipped skin
+def get_current_skin():
+    global current_skin
+    if current_skin == 1:
+        return [functions.get_image('img/skins/spaceship.png').convert_alpha(),
+                functions.get_image('img/skins/spaceship_l2.png').convert_alpha(),
+                functions.get_image('img/skins/spaceship_r2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship_l2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship_r2.png').convert_alpha()]
+    elif current_skin == 2:
+        return [functions.get_image('img/skins/spaceship2.png').convert_alpha(),
+                functions.get_image('img/skins/spaceship2_l2.png').convert_alpha(),
+                functions.get_image('img/skins/spaceship2_r2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship2_l2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship2_r2.png').convert_alpha()]
+    elif current_skin == 3:
+        return [functions.get_image('img/skins/spaceship3.png').convert_alpha(),
+                functions.get_image('img/skins/spaceship3_l2.png').convert_alpha(),
+                functions.get_image('img/skins/spaceship3_r2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship3.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship3_l2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship3_r2.png').convert_alpha()]
+    elif current_skin == 4:
+        return [functions.get_image('img/skins/spaceship4.png').convert_alpha(),
+                functions.get_image('img/skins/spaceship4_l2.png').convert_alpha(),
+                functions.get_image('img/skins/spaceship4_r2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship4.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship4_l2.png').convert_alpha(),
+                functions.get_image('img/skins/shielded_spaceship4_r2.png').convert_alpha()]
+
+
 def game_restart():
-    global current_score, map_score, current_coins
+    global current_score, map_score, current_coins, current_skin
     current_score = 0
     current_coins = 0
     map_score = 0
-    GameScene.player = Player([functions.get_image('img/spaceship.png').convert_alpha()], 370, 480, 3)
+    current_skin_sprites = get_current_skin()
+    GameScene.player = Player(current_skin_sprites, 370, 480, 3)
     GameScene.player_sprite.add(GameScene.player)
     GameScene.start_time = functions.get_current_time()
     GameScene.pause = True
