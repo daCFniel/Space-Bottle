@@ -1,4 +1,4 @@
-# space-bottle
+# Space Bottle
 A game written in **Python** using **pygame** module. My personal project and a way for me to learn new programming language.
 
 The game has two game modes. 
