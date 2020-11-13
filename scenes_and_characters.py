@@ -6,6 +6,7 @@ import gui_elements
 
 # CONSTANT VARIABLES
 WIDTH, HEIGHT = 800, 600
+# colours
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
@@ -18,6 +19,7 @@ TOMATO = (255, 99, 71)
 GOLD = (255, 215, 0)
 DARKBLUE = (0, 0, 255)
 MAGENTA = (255, 0, 255)
+LIGHTGREEN = (50, 210, 25)
 
 # Global variables
 frame = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -27,7 +29,7 @@ current_coins = 0
 map_score = 0
 alien_default_speed = 3
 immunity_time = 10
-angry_mode_time = 10
+angry_mode_time = 15
 weapon_damaged_time = 15
 pause_time = 3
 
@@ -236,9 +238,8 @@ class Alien(Character):
             # animation speed - x(here 4) * number of images (here 4) + x(here 4) = 20
             # too speed up animation make x lower, to slow down animation, make x larger
             self.image[0] = self.image[self.animation_count // 4]
-            if self.animation_count + 1 < 20:
-                self.animation_count += 1
-            else:
+            self.animation_count += 1
+            if self.animation_count >= 20:
                 self.drop_collectable(self.drop_chance)
                 self.kill()
 
@@ -295,7 +296,7 @@ class Alien(Character):
                                  functions.get_image('img/coin6.png').convert_alpha(),
                                  functions.get_image('img/coin7.png').convert_alpha()],
                                 self.rect.x + position_fix,
-                                self.rect.y, 1, "coin"))
+                                self.rect.y, 2, "coin"))
 
 
 class AlienLevel2(Alien):
@@ -317,10 +318,7 @@ class AlienLevel3(Alien):
         frame.blit(self.image[0], self.rect)
 
     def update(self):
-        if Alien.angry_mode:
-            self.rect.move_ip(Alien.shared_speed, 1)  # move faster
-        else:
-            self.rect.move_ip(self.speed, 1)
+        self.rect.move_ip(self.speed, 1)
         # check if alien's health reaches 0, if so - kill it
         if self.health == 0:
             self.image[0] = self.image[(self.animation_count // 5) + 1]
@@ -331,7 +329,7 @@ class AlienLevel3(Alien):
                 self.kill()
 
     def action(self):
-        if random.randint(0, 200) == 0:
+        if random.randint(0, 400) == 0:
             GameScene.enemy_bullets.add(
                 BulletEnemy([functions.get_image('img/bullet3.png').convert_alpha()], self.rect.x, self.rect.y, 4))
 
@@ -979,7 +977,7 @@ class MenuCreditsScene(Scene):
         # text that will be shown in credits
         self.credits_list = ["Space Bottle", " ", " ", " ", "Programming -- daCFniel", "Graphics -- daCFniel",
                              "Design -- daCFniel", " ", " ", " ",
-                             "Menu song -- Namrox", "Testing -- Namrox", "Ideas -- Namrox"]
+                             "Menu theme -- Namrox", "Testing -- Namrox", "Ideas -- Namrox"]
         # fonts
         self.credits_font = functions.get_font('fonts/Space_Galaxy.ttf', 40)
         self.credits_font_big = functions.get_font('fonts/Space_Galaxy.ttf', 90)
@@ -1039,9 +1037,6 @@ class GameOptionsAudioScene(GameOptionsScene):
         self.box1.rect.centerx = self.rect1.centerx
         self.box2.rect.centerx = self.rect1.centerx
 
-        # Color
-        self.light_green = (50, 210, 25)
-
     def event_handling(self, events):
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -1061,7 +1056,7 @@ class GameOptionsAudioScene(GameOptionsScene):
                             save_data()
                             pygame.mixer.music.set_volume(music_volume / 100)
                             accept_sound.play()
-                            self.percentage_text.text_color = self.light_green
+                            self.percentage_text.text_color = LIGHTGREEN
                         self.box1.active2 = False
 
         def box2_action():
@@ -1075,7 +1070,7 @@ class GameOptionsAudioScene(GameOptionsScene):
                             for sound in sounds:
                                 sound.set_volume(sounds_volume / 100)
                             accept_sound.play()
-                            self.percentage_text2.text_color = self.light_green
+                            self.percentage_text2.text_color = LIGHTGREEN
                         self.box2.active2 = False
 
         box1_action()
@@ -1450,12 +1445,15 @@ class MenuSettingsScene(MenuScene):
         self.back_button.write(frame, self.back_button_font)
 
 
-class MenuSettingsAudioScene(GameOptionsAudioScene):
+class MenuSettingsAudioScene(MenuScene):
     def __init__(self):
         super().__init__()
         # bg
         self.background_img = functions.get_image('img/menu_bg.jpg')
-        # overriding boxes to set False for custom surface
+        # fonts
+        self.audio_font = functions.get_font('fonts/Space_Galaxy.ttf', 40)
+        self.percentage_font = functions.get_font('fonts/Symbols.otf', 40)
+        # Input boxes
         self.box1 = gui_elements.InputBox(0, 90, 120, 40, WHITE, BLACK, str(int(music_volume)))
         self.box2 = gui_elements.InputBox(0, 200, 120, 40, WHITE, BLACK, str(int(sounds_volume)))
         self.input_boxes = [self.box1, self.box2]
@@ -1463,7 +1461,12 @@ class MenuSettingsAudioScene(GameOptionsAudioScene):
         self.box2.rect.center = frame_rect.center
         self.box1.rect.y -= 90
         self.box2.rect.y += 40
-        # also fixing texts place
+        # Texts
+        self.music_volume_text = gui_elements.Text("Music volume", WHITE, self.audio_font)
+        self.sound_volume_text = gui_elements.Text("Sound effects volume", WHITE, self.audio_font)
+        self.percentage_text = gui_elements.Text("%", WHITE, self.percentage_font)
+        self.percentage_text2 = gui_elements.Text("%", WHITE, self.percentage_font)
+        self.texts = [self.music_volume_text, self.sound_volume_text, self.percentage_text, self.percentage_text2]
         self.music_volume_text.rect.centerx = frame_rect.centerx
         self.music_volume_text.rect.y += 80
         self.sound_volume_text.rect.center = frame_rect.center
@@ -1478,6 +1481,42 @@ class MenuSettingsAudioScene(GameOptionsAudioScene):
             for box in self.input_boxes:
                 box.handle_input(event)
 
+    def update(self, pressed_keys):
+        def box1_action():
+            if self.box1.active:
+                if self.box1.active2:
+                    if functions.is_number(self.box1.text):
+                        if 0 <= int(self.box1.text) <= 100:
+                            global music_volume
+                            music_volume = int(self.box1.text)
+                            save_data()
+                            pygame.mixer.music.set_volume(music_volume / 100)
+                            accept_sound.play()
+                            self.percentage_text.text_color = LIGHTGREEN
+                        self.box1.active2 = False
+
+        def box2_action():
+            if self.box2.active:
+                if self.box2.active2:
+                    if functions.is_number(self.box2.text):
+                        if 0 <= int(self.box2.text) <= 100:
+                            global sounds_volume
+                            sounds_volume = int(self.box2.text)
+                            save_data()
+                            for sound in sounds:
+                                sound.set_volume(sounds_volume / 100)
+                            accept_sound.play()
+                            self.percentage_text2.text_color = LIGHTGREEN
+                        self.box2.active2 = False
+
+        box1_action()
+        box2_action()
+
+        def back_button_action():
+            self.switch_to_scene(MenuScene())
+
+        self.back_button.on_click_action(lambda: back_button_action())
+
     def render(self):
         # background
         frame.blit(self.background_img, (0, 0))
@@ -1487,6 +1526,9 @@ class MenuSettingsAudioScene(GameOptionsAudioScene):
             box.draw(frame)
             box.write(frame, self.menu_font)
             box.check_if_active()
+        # back button
+        self.back_button.draw(frame)
+        self.back_button.write(frame, self.back_button_font)
 
 
 class MenuSettingsDisplayScene(MenuScene):
@@ -1989,6 +2031,37 @@ def game_restart():
     pygame.mixer.music.play(-1)
     GameScene.game_is_active = True
     # place for testing static aliens
+    # GameScene.collectables.add(
+    #     Collectable([functions.get_image('img/angry_mode.png').convert_alpha()],
+    #                 random.randint(0, 736),
+    #                 300, 0, "angry_mode"))
+    # GameScene.aliens.add(
+    #     AlienLevel3([functions.get_image('img/alien3.png').convert_alpha(),
+    #                  functions.get_image('img/alien3_1hp.png').convert_alpha(),
+    #                  functions.get_image('img/alien3_explosion0.png').convert_alpha(),
+    #                  functions.get_image('img/alien3_explosion1.png').convert_alpha(),
+    #                  functions.get_image('img/alien3_explosion2.png').convert_alpha(),
+    #                  functions.get_image('img/alien3_explosion3.png').convert_alpha()],
+    #                 random.randint(0, 736),
+    #                 random.randint(-1000, -200), 2, 2))
+    # GameScene.collectables.add(
+    #     Collectable([functions.get_image('img/coin0.png').convert_alpha(),
+    #                  functions.get_image('img/coin1.png').convert_alpha(),
+    #                  functions.get_image('img/coin2.png').convert_alpha(),
+    #                  functions.get_image('img/coin3.png').convert_alpha(),
+    #                  functions.get_image('img/coin4.png').convert_alpha(),
+    #                  functions.get_image('img/coin5.png').convert_alpha(),
+    #                  functions.get_image('img/coin6.png').convert_alpha(),
+    #                  functions.get_image('img/coin7.png').convert_alpha()],
+    #                 300, 100, 2, "coin"))
+    # for i in range(20):
+    #     GameScene.aliens.add(
+    #         Alien([functions.get_image('img/alien.png').convert_alpha(),
+    #                functions.get_image('img/dust0.png').convert_alpha(),
+    #                functions.get_image('img/dust1.png').convert_alpha(),
+    #                functions.get_image('img/dust2.png').convert_alpha(),
+    #                functions.get_image('img/dust3.png').convert_alpha()], random.randint(0, 736),
+    #               random.randint(0, 300), 0, 1))
 
 
 def get_ready():  # count 3 seconds before resuming the game, blit the counter
@@ -2054,7 +2127,8 @@ def check_if_alien_collide():
                                                         pygame.sprite.collide_mask)
     for alien in alien_bullet_collision:
         explosion_sound.play()
-        alien.health -= 1  # reduce alien's health by 1 if it collides with bullet
+        if alien.health > 0:
+            alien.health -= 1  # reduce alien's health by 1 if it collides with bullet
 
     if GameScene.laser.state == "moving":
         alien_laser_collision = pygame.sprite.spritecollide(GameScene.laser,
@@ -2134,4 +2208,4 @@ def show_collectables():
         frame.blit(functions.get_image('img/angry_mode.png'), (frame_rect.right - 45, 90))
     if current_coins > 0:
         for i in range(current_coins):
-            frame.blit(functions.get_image('img/coin3.png'), (28 * i + 90, 7))
+            frame.blit(functions.get_image('img/coin3.png'), (28 * i + 110, 7))
