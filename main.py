@@ -3,7 +3,7 @@ import scenes_and_characters
 import functions
 from sys import exit
 
-# initialize the pygame
+# Initialize the pygame
 pygame.init()
 
 # CONSTANT VARIABLES
@@ -12,6 +12,7 @@ BLACK = (0, 0, 0)
 FPS = 120
 
 
+# Main loop
 def start_game(fps, starting_scene):
     # set clock
     clock = pygame.time.Clock()
@@ -51,10 +52,9 @@ def start_game(fps, starting_scene):
         pygame.display.update()
 
 
-# make the frame stay until pressing quit
-# We put exit() after pygame.quit(), because pygame.quit()
-# makes the system exit and exit() closes that window.
+# Make the game frame stay until quit the game
 start_game(FPS, scenes_and_characters.MenuScene())
+# pygame.quit() makes the system exit and exit() closes the window.
 pygame.quit()
 exit()
 

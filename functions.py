@@ -4,8 +4,6 @@ import os
 pygame.mixer.init()
 pygame.font.init()
 
-# background image and intro
-# .convert() method makes the image loading time A LOT faster
 image_library = {}
 
 
@@ -32,8 +30,6 @@ def load_music(path):
     pygame.mixer.music.load(safe_path)
 
 
-# fonts
-# font.get_fonts() returns list of your system fonts
 def get_font(path, size):
     safe_path = path.replace('/', os.sep).replace('\\', os.sep).lower()
     font = pygame.font.Font(safe_path, size)
