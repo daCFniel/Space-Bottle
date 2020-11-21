@@ -6,6 +6,7 @@ import gui_elements
 
 # CONSTANT VARIABLES
 WIDTH, HEIGHT = 800, 600
+# colours
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
@@ -18,6 +19,7 @@ TOMATO = (255, 99, 71)
 GOLD = (255, 215, 0)
 DARKBLUE = (0, 0, 255)
 MAGENTA = (255, 0, 255)
+LIGHTGREEN = (50, 210, 25)
 
 # Global variables
 frame = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -27,7 +29,7 @@ current_coins = 0
 map_score = 0
 alien_default_speed = 3
 immunity_time = 10
-angry_mode_time = 10
+angry_mode_time = 15
 weapon_damaged_time = 15
 pause_time = 3
 
@@ -236,9 +238,8 @@ class Alien(Character):
             # animation speed - x(here 4) * number of images (here 4) + x(here 4) = 20
             # too speed up animation make x lower, to slow down animation, make x larger
             self.image[0] = self.image[self.animation_count // 4]
-            if self.animation_count + 1 < 20:
-                self.animation_count += 1
-            else:
+            self.animation_count += 1
+            if self.animation_count >= 20:
                 self.drop_collectable(self.drop_chance)
                 self.kill()
 
@@ -295,7 +296,7 @@ class Alien(Character):
                                  functions.get_image('img/coin6.png').convert_alpha(),
                                  functions.get_image('img/coin7.png').convert_alpha()],
                                 self.rect.x + position_fix,
-                                self.rect.y, 1, "coin"))
+                                self.rect.y, 2, "coin"))
 
 
 class AlienLevel2(Alien):
@@ -317,10 +318,7 @@ class AlienLevel3(Alien):
         frame.blit(self.image[0], self.rect)
 
     def update(self):
-        if Alien.angry_mode:
-            self.rect.move_ip(Alien.shared_speed, 1)  # move faster
-        else:
-            self.rect.move_ip(self.speed, 1)
+        self.rect.move_ip(self.speed, 1)
         # check if alien's health reaches 0, if so - kill it
         if self.health == 0:
             self.image[0] = self.image[(self.animation_count // 5) + 1]
@@ -558,14 +556,14 @@ class GameScene(Scene):
 
     def change_background(self):
         global map_score
-        if map_score >= 200:  # every 200 points(score) background changes to a random one
-            # allow to change background once and prevent from going out of index
+        if map_score >= 200:  # every 200 points(score) background changes to the next one
+            # allow to change background one time and prevent from going out of index
             if self.switch_background is True and self.current_bg_index < len(self.backgrounds) - 1:
                 if self.current_bg is not None:
                     self.previous_background = self.current_bg
                 self.current_bg_index += 1
                 self.current_bg = self.backgrounds[self.current_bg_index]
-                self.switch_background = False
+                self.switch_background = False # prevent game from entering this loop while background is chaning to another
                 self.bg_transparency = 0
             if self.bg_transparency < 255:
                 self.bg_transparency += 0.1
@@ -639,7 +637,7 @@ class GameScene(Scene):
                                              functions.get_image('img/dust1.png').convert_alpha(),
                                              functions.get_image('img/dust2.png').convert_alpha(),
                                              functions.get_image('img/dust3.png').convert_alpha()],
-                                            64 * i + extra, -100, 2, 1))
+                                            64 * i + extra, -100, 3, 1))
                     elif event.type == GameScene.ALIEN_LVL3_RESPAWN:  # spawn level 1 alien
                         GameScene.aliens.add(
                             AlienLevel3([functions.get_image('img/alien3.png').convert_alpha(),
@@ -979,7 +977,7 @@ class MenuCreditsScene(Scene):
         # text that will be shown in credits
         self.credits_list = ["Space Bottle", " ", " ", " ", "Programming -- daCFniel", "Graphics -- daCFniel",
                              "Design -- daCFniel", " ", " ", " ",
-                             "Menu song -- Namrox", "Testing -- Namrox", "Ideas -- Namrox"]
+                             "Menu theme -- Namrox", "Testing -- Namrox", "Ideas -- Namrox"]
         # fonts
         self.credits_font = functions.get_font('fonts/Space_Galaxy.ttf', 40)
         self.credits_font_big = functions.get_font('fonts/Space_Galaxy.ttf', 90)
@@ -1039,9 +1037,6 @@ class GameOptionsAudioScene(GameOptionsScene):
         self.box1.rect.centerx = self.rect1.centerx
         self.box2.rect.centerx = self.rect1.centerx
 
-        # Color
-        self.light_green = (50, 210, 25)
-
     def event_handling(self, events):
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -1061,7 +1056,7 @@ class GameOptionsAudioScene(GameOptionsScene):
                             save_data()
                             pygame.mixer.music.set_volume(music_volume / 100)
                             accept_sound.play()
-                            self.percentage_text.text_color = self.light_green
+                            self.percentage_text.text_color = LIGHTGREEN
                         self.box1.active2 = False
 
         def box2_action():
@@ -1075,7 +1070,7 @@ class GameOptionsAudioScene(GameOptionsScene):
                             for sound in sounds:
                                 sound.set_volume(sounds_volume / 100)
                             accept_sound.play()
-                            self.percentage_text2.text_color = self.light_green
+                            self.percentage_text2.text_color = LIGHTGREEN
                         self.box2.active2 = False
 
         box1_action()
@@ -1450,12 +1445,15 @@ class MenuSettingsScene(MenuScene):
         self.back_button.write(frame, self.back_button_font)
 
 
-class MenuSettingsAudioScene(GameOptionsAudioScene):
+class MenuSettingsAudioScene(MenuScene):
     def __init__(self):
         super().__init__()
         # bg
         self.background_img = functions.get_image('img/menu_bg.jpg')
-        # overriding boxes to set False for custom surface
+        # fonts
+        self.audio_font = functions.get_font('fonts/Space_Galaxy.ttf', 40)
+        self.percentage_font = functions.get_font('fonts/Symbols.otf', 40)
+        # Input boxes
         self.box1 = gui_elements.InputBox(0, 90, 120, 40, WHITE, BLACK, str(int(music_volume)))
         self.box2 = gui_elements.InputBox(0, 200, 120, 40, WHITE, BLACK, str(int(sounds_volume)))
         self.input_boxes = [self.box1, self.box2]
@@ -1463,7 +1461,12 @@ class MenuSettingsAudioScene(GameOptionsAudioScene):
         self.box2.rect.center = frame_rect.center
         self.box1.rect.y -= 90
         self.box2.rect.y += 40
-        # also fixing texts place
+        # Texts
+        self.music_volume_text = gui_elements.Text("Music volume", WHITE, self.audio_font)
+        self.sound_volume_text = gui_elements.Text("Sound effects volume", WHITE, self.audio_font)
+        self.percentage_text = gui_elements.Text("%", WHITE, self.percentage_font)
+        self.percentage_text2 = gui_elements.Text("%", WHITE, self.percentage_font)
+        self.texts = [self.music_volume_text, self.sound_volume_text, self.percentage_text, self.percentage_text2]
         self.music_volume_text.rect.centerx = frame_rect.centerx
         self.music_volume_text.rect.y += 80
         self.sound_volume_text.rect.center = frame_rect.center
@@ -1478,6 +1481,42 @@ class MenuSettingsAudioScene(GameOptionsAudioScene):
             for box in self.input_boxes:
                 box.handle_input(event)
 
+    def update(self, pressed_keys):
+        def box1_action():
+            if self.box1.active:
+                if self.box1.active2:
+                    if functions.is_number(self.box1.text):
+                        if 0 <= int(self.box1.text) <= 100:
+                            global music_volume
+                            music_volume = int(self.box1.text)
+                            save_data()
+                            pygame.mixer.music.set_volume(music_volume / 100)
+                            accept_sound.play()
+                            self.percentage_text.text_color = LIGHTGREEN
+                        self.box1.active2 = False
+
+        def box2_action():
+            if self.box2.active:
+                if self.box2.active2:
+                    if functions.is_number(self.box2.text):
+                        if 0 <= int(self.box2.text) <= 100:
+                            global sounds_volume
+                            sounds_volume = int(self.box2.text)
+                            save_data()
+                            for sound in sounds:
+                                sound.set_volume(sounds_volume / 100)
+                            accept_sound.play()
+                            self.percentage_text2.text_color = LIGHTGREEN
+                        self.box2.active2 = False
+
+        box1_action()
+        box2_action()
+
+        def back_button_action():
+            self.switch_to_scene(MenuScene())
+
+        self.back_button.on_click_action(lambda: back_button_action())
+
     def render(self):
         # background
         frame.blit(self.background_img, (0, 0))
@@ -1487,6 +1526,9 @@ class MenuSettingsAudioScene(GameOptionsAudioScene):
             box.draw(frame)
             box.write(frame, self.menu_font)
             box.check_if_active()
+        # back button
+        self.back_button.draw(frame)
+        self.back_button.write(frame, self.back_button_font)
 
 
 class MenuSettingsDisplayScene(MenuScene):
@@ -1794,7 +1836,7 @@ class GameFailScene(Scene):
             button.draw_border(frame, WHITE)
 
 
-# return a string saying if the fullscreen mode is on
+# Return a string saying if the fullscreen mode is on
 def is_fullscreen():
     if display_mode == 0:
         return "NO"
@@ -1802,7 +1844,7 @@ def is_fullscreen():
         return "YES"
 
 
-#  return current controls as a string
+#  Return current controls as a string
 def get_current_controls():
     if controls[0] == pygame.K_w:
         return "WSAD"
@@ -1810,7 +1852,7 @@ def get_current_controls():
         return "Arrows"
 
 
-# get image of current rank
+# Get image of current rank
 def get_current_rank():
     global current_rank
     if current_rank == 1:
@@ -1833,7 +1875,7 @@ def get_current_rank():
         return functions.get_image('img/alien_cow.png').convert_alpha()
 
 
-# if current score is higher than top score, set current score as a new top score
+# If current score is higher than top score, set current score as a new top score
 def update_top_score():
     global top_score, current_score
     if current_score > top_score:
@@ -1842,7 +1884,7 @@ def update_top_score():
         return True
 
 
-# add current coins to the total number of coins
+# Add current coins to the total number of coins
 def update_total_coins():
     global total_coins, current_coins
     if current_coins > 0:
@@ -1851,7 +1893,7 @@ def update_total_coins():
         return True
 
 
-# save all data to the file (save/backup progress)
+# Save all data to the file (save/backup progress)
 def save_data():
     global data, file
     data = [str(current_rank) + '\n', str(top_score) + '\n', str(current_exp) + '\n', str(current_controls) + '\n',
@@ -1862,7 +1904,7 @@ def save_data():
         file.writelines(data)
 
 
-# add gained exp to the current exp and save it, if player is up to promotion, promote
+# Add gained exp to the current exp and save it, if player is up to promotion, promote
 def check_if_promotion():
     global current_exp, current_score, exp_required_total, current_rank
     current_exp += current_score
@@ -1872,6 +1914,7 @@ def check_if_promotion():
         return True
 
 
+# Promote to higher rank
 def promote():
     global current_exp, exp_required_total, current_rank, exp_required_total, total_coins
     current_exp -= exp_required_total
@@ -1881,7 +1924,7 @@ def promote():
     save_data()
 
 
-# game functions
+# Show the score player has
 def update_score_label(x, y):
     if not GameScene.player.has_shield:
         score_text = GameScene.score_font.render("Score: " + str(current_score), True, WHITE, BLACK)
@@ -1891,6 +1934,7 @@ def update_score_label(x, y):
     frame.blit(score_text, (x, y))
 
 
+# Show the number of bullets player has
 def update_bullets_label(x, y):
     if not GameScene.player.has_laser:
         num_of_bullets_text = GameScene.score_font.render(
@@ -1910,11 +1954,13 @@ def update_bullets_label(x, y):
         frame.blit(num_of_bullets_text, (x, y))
 
 
+# Show game over text
 def game_over_label():
     game_over_text = GameScene.game_over_font.render("Game over!", True, WHITE, BLACK)
     frame.blit(game_over_text, (230, 260))
 
 
+# Remove object, disable timers and collectable effects
 def game_erase():
     # remove characters and objects
     GameScene.player_sprite.empty()
@@ -1964,6 +2010,7 @@ def get_current_skin():
                 functions.get_image('img/skins/shielded_spaceship4_r2.png').convert_alpha()]
 
 
+# Restart the game by restoring all the variables, timers, sprites, media to default
 def game_restart():
     global current_score, map_score, current_coins, current_skin
     current_score = 0
@@ -1976,7 +2023,7 @@ def game_restart():
     GameScene.pause = True
     # reset timers
     pygame.time.set_timer(GameScene.ALIEN_LVL1_STOP, random.randint(40000, 60000))
-    pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(200, 250))
+    pygame.time.set_timer(GameScene.ALIEN_LVL1_RESPAWN, random.randint(150, 200))
     pygame.time.set_timer(GameScene.ALIEN_LVL3_RESPAWN, random.randint(4000, 10000))
     pygame.time.set_timer(GameScene.ALIEN_LVL4_RESPAWN, random.randint(10000, 20000))
     pygame.time.set_timer(GameScene.COLLECTABLE_AMMO_RESPAWN, random.randint(25000, 35000))
@@ -1991,7 +2038,8 @@ def game_restart():
     # place for testing static aliens
 
 
-def get_ready():  # count 3 seconds before resuming the game, blit the counter
+# Count 3 seconds before resuming the game, blit the counter
+def get_ready():
     counter = functions.get_current_time() - GameScene.start_time
     if counter >= pause_time:
         GameScene.pause = False
@@ -2002,7 +2050,7 @@ def get_ready():  # count 3 seconds before resuming the game, blit the counter
         pygame.mixer.music.pause()
 
 
-# count x seconds and then take off the immunity buff
+# Count x seconds and then take off the immunity buff
 def immunity_timer():
     counter = functions.get_current_time() - GameScene.start_time_immunity
     if counter >= immunity_time:
@@ -2014,7 +2062,7 @@ def immunity_timer():
         frame.blit(immunity_text, (frame_rect.left + 60, frame_rect.bottom - 150))
 
 
-# count x seconds and then switch off the angry mode debuff
+# Count x seconds and then switch off the angry mode debuff
 def angry_mode_timer():
     counter = functions.get_current_time() - GameScene.start_time_angry_mode
     if counter >= angry_mode_time:
@@ -2025,7 +2073,7 @@ def angry_mode_timer():
         frame.blit(angry_mode_text, (frame_rect.left + 90, frame_rect.bottom - 80))
 
 
-# count x seconds and then switch off the weapon damaged debuff
+# Count x seconds and then switch off the weapon damaged debuff
 def weapon_damaged_timer():
     counter = functions.get_current_time() - GameScene.start_time_weapon_damaged
     if counter >= weapon_damaged_time:
@@ -2036,7 +2084,7 @@ def weapon_damaged_timer():
         frame.blit(weapon_damaged_text, (frame_rect.centerx - 170, frame_rect.centery - 20))
 
 
-# if two aliens are overlapping, kill one of them (only kills level 1 aliens)
+# If two aliens are overlapping, kill one of them (only kills level 1 aliens)
 def fix_alien_overlapping(alien):
     if any(alien.rect.colliderect(alien2.rect) for alien2 in GameScene.aliens if
            alien2 is not alien) or \
@@ -2046,15 +2094,16 @@ def fix_alien_overlapping(alien):
             alien.health = 0
 
 
-# alien collisions with laser/bullet
-# player collisions with alien/alien bullet
+# Alien collisions with laser/bullet
+# Player collisions with alien/alien bullet
 def check_if_alien_collide():
     alien_bullet_collision = pygame.sprite.groupcollide(GameScene.aliens,
                                                         GameScene.bullets, False, True,
                                                         pygame.sprite.collide_mask)
     for alien in alien_bullet_collision:
         explosion_sound.play()
-        alien.health -= 1  # reduce alien's health by 1 if it collides with bullet
+        if alien.health > 0:
+            alien.health -= 1  # reduce alien's health by 1 if it collides with bullet
 
     if GameScene.laser.state == "moving":
         alien_laser_collision = pygame.sprite.spritecollide(GameScene.laser,
@@ -2082,17 +2131,17 @@ def check_if_alien_collide():
             game_erase()
 
 
-#  check if collectable is colliding with the player and do action depending on the type of collectable
+# Check if collectable is colliding with the player and do action depending on the type of collectable
 def check_if_collectable_collide():
     collectable_player_collision = pygame.sprite.spritecollide(GameScene.player,
                                                                GameScene.collectables,
                                                                True,
                                                                pygame.sprite.collide_mask)
     if collectable_player_collision:
-        collectable_collection_sound.play()
         for item in collectable_player_collision:
             if item.category == "ammo":  # get 1 ammo, you can shoot with ammo
                 GameScene.player.num_of_bullets += 1
+                collectable_collection_sound.play()
             elif item.category == "shield":  # get shield, it protects you from 1 hit
                 GameScene.player.has_shield = True
                 if GameScene.player.num_of_shields < 4:
@@ -2119,7 +2168,7 @@ def check_if_collectable_collide():
                 coin_collection_sound.play()
 
 
-# show what collectables are active during the game
+# Show what collectables are active during the game
 def show_collectables():
     if GameScene.player.has_shield:
         for i in range(GameScene.player.num_of_shields):
@@ -2133,5 +2182,16 @@ def show_collectables():
     if Alien.angry_mode:
         frame.blit(functions.get_image('img/angry_mode.png'), (frame_rect.right - 45, 90))
     if current_coins > 0:
+        fix = 15
+        if 10 > current_score >= 0:
+            fix *= 0
+        elif 100 > current_score >= 10:
+            fix *= 1
+        elif 1000 > current_score >= 100:
+            fix *= 2
+        elif 10000 > current_score >= 1000:
+            fix *= 3
+        else:
+            fix *= 4
         for i in range(current_coins):
-            frame.blit(functions.get_image('img/coin3.png'), (28 * i + 90, 7))
+            frame.blit(functions.get_image('img/coin3.png'), (28 * i + 90 + fix, 7))
