@@ -6,6 +6,7 @@ The game has two game modes.
 - **Story mode:** Not implemented yet.
 - **Endless mode:** The goal of endless mode is to stay alive as long as possible by avoiding hostile aliens.
 
+
 # About Space Bottle 
 
 Can you meet the challenge and become the best spacecraft pilot in the galaxy?
