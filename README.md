@@ -1,5 +1,5 @@
 # Space Bottle
-A game written in **Python** using **pygame** module. My personal project and a way for me to learn new programming language.
+A game written in **Python** using **pygame** module. My personal project and a way for me to learn new programming language along with the concepts of creating 2D games.
 
 The game has two game modes. 
 
