@@ -15,3 +15,5 @@ If you like space, shooting and arcade games, then this is the game for you.
 You start out as the captain of a space ship and must survive as long as possible in a deadly space where almost everything that moves wants to destroy you... 
 
 The game includes skin shop and rank system.
+
+[Check out mini wiki](https://github.com/daCFniel/Space-Bottle/wiki/Wiki)
